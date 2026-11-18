@@ -234,6 +234,59 @@ logoutButtons.forEach((logoutButton) => {
 });
 
 //onAuthStateChanged
+// ------------------------------------------------------------
+// 進入學生模式：用登入的 Email 找出學生姓名，並啟動課表、繳費、公告的即時監聽。
+// 登入時會呼叫；學生自己重新綁定姓名之後也會再呼叫一次。
+// ------------------------------------------------------------
+async function enterStudentMode(user) {
+    const coachView = document.getElementById('coach-view');
+    const studentView = document.getElementById('student-view');
+    const sidebar = document.querySelector('.sidebar');
+
+    resetStudentView();     // 先清掉畫面，避免看到上一位使用者的資料
+    let studentName = '';
+    let lookupFailed = false;
+    try {
+        const q = query(collection(db, "students"), where("email", "==", user.email));
+        const snap = await getDocs(q);
+        if (!snap.empty) {
+            studentName = snap.docs[0].id; // students collection 的文件 ID 就是姓名
+        } else {
+            console.warn("⚠️ 找不到這個 Email 對應的學生姓名。可能原因：這個帳號還沒綁定姓名，或教練刪除過這位學生的資料。");
+        }
+    } catch (err) {
+        console.error("查詢學生姓名失敗:", err);
+        lookupFailed = true;
+    }
+
+    // 查詢期間如果已經登出（或換了人），就不要再啟動任何監聽
+    if (!auth.currentUser || auth.currentUser.uid !== user.uid) return;
+
+    currentUser = { uid: user.uid, email: user.email, role: 'student', name: studentName };
+
+    if (sidebar) sidebar.style.display = 'none';
+    coachView.style.display = 'none';
+    coachView.classList.add('hide');
+    studentView.style.display = 'block';
+
+    const nameEl = document.getElementById('student-name-display');
+    if (nameEl) nameEl.innerText = studentName || '同學';
+
+    console.log("啟動學生模式，姓名比對用:", studentName || '(尚未找到對應姓名)');
+    startStudentLiveSync(studentName);
+    startStudentPaymentWatchers(studentName);
+    watchOverviewForStudent();
+
+    updateOfflineBanner();
+    if (!studentName) {
+        showStudentBanner(lookupFailed
+            ? '學生資料讀取失敗，請檢查網路後重新整理頁面。'
+            : '找不到你的學生資料。請在下面輸入你的姓名完成綁定（要跟教練登記的一樣）。',
+            lookupFailed ? 'error' : 'notfound');
+        if (!lookupFailed) showStudentRebindForm();
+    }
+}
+
 onAuthStateChanged(auth, async (user) => {
     if (suppressAuthUI) {
         console.log("（註冊流程進行中，暫時忽略這次 onAuthStateChanged）");
@@ -267,47 +320,8 @@ onAuthStateChanged(auth, async (user) => {
             startCoachPaymentWatcher();
             startIncomeRecordsWatcher();
         } else {
-            resetStudentView();     // 先清掉畫面，避免看到上一位使用者的資料
-            let studentName = '';
-            let lookupFailed = false;
-            try {
-                const q = query(collection(db, "students"), where("email", "==", user.email));
-                const snap = await getDocs(q);
-                if (!snap.empty) {
-                    studentName = snap.docs[0].id; // students collection 的文件 ID 就是姓名
-                } else {
-                    console.warn("⚠️ 找不到這個 Email 對應的學生姓名。可能原因：這個帳號不是透過註冊表單建立的，或教練還沒幫這個學生排過課。");
-                }
-            } catch (err) {
-                console.error("查詢學生姓名失敗:", err);
-                lookupFailed = true;
-            }
-
-            // 查詢期間如果已經登出（或換了人），就不要再啟動任何監聽
-            if (!auth.currentUser || auth.currentUser.uid !== user.uid) return;
-
-            currentUser = { uid: user.uid, email: user.email, role: 'student', name: studentName };
-
-            if (sidebar) sidebar.style.display = 'none';
-            coachView.style.display = 'none';
-            coachView.classList.add('hide');
-            studentView.style.display = 'block';
-
-            const nameEl = document.getElementById('student-name-display');
-            if (nameEl) nameEl.innerText = studentName || '同學';
-
-            console.log("啟動學生模式，姓名比對用:", studentName || '(尚未找到對應姓名)');
-            startStudentLiveSync(studentName);
-            startStudentPaymentWatchers(studentName);
-            watchOverviewForStudent();
-
-            updateOfflineBanner();
-            if (!studentName) {
-                showStudentBanner(lookupFailed
-                    ? '學生資料讀取失敗，請檢查網路後重新整理頁面。'
-                    : '找不到你的學生資料。請聯絡教練，確認你註冊時填的姓名與教練登記的是否一致。',
-                    lookupFailed ? 'error' : 'notfound');
-            }
+            await enterStudentMode(user);
+            return;
         }
 
         // 學生端等課表資料送到後才會畫畫面，這裡不先畫，避免閃一下 0
@@ -345,6 +359,14 @@ function escapeProfileText(text) {
     }[ch]));
 }
 
+function setProfileEmail(email) {
+    const el = document.getElementById('profile-email');
+    if (!el) return;
+    el.dataset.email = email || '';
+    el.innerText = email || '（尚未綁定帳號）';
+    el.classList.toggle('is-unbound', !email);
+}
+
 function openStudentProfile(name, data) {
     currentProfileStudent = name;
 
@@ -352,7 +374,7 @@ function openStudentProfile(name, data) {
     document.getElementById('student-profile-view').classList.remove('hide');
 
     document.getElementById('profile-name').innerText = name;
-    document.getElementById('profile-email').innerText = data.email || '（尚未註冊帳號）';
+    setProfileEmail(data.email || '');
     document.getElementById('profile-price').innerText =
         data.defaultPrice !== undefined ? `$${data.defaultPrice}` : '—';
 
@@ -376,6 +398,42 @@ window.closeStudentProfile = function () {
 
 // 刪除成功後 deleteStudent 會呼叫 renderStudentDbPanel，裡面已經會回到名單；
 // 按取消則會留在個人頁。
+// 教練端：修改（或解除）這位學生綁定的登入 Email
+window.editStudentEmail = async function () {
+    const name = currentProfileStudent;
+    if (!name) return;
+    const emailEl = document.getElementById('profile-email');
+    const current = (emailEl && emailEl.dataset.email) || '';
+
+    const input = prompt(`請輸入「${name}」的登入 Email（會自動轉成小寫）。\n留白代表解除綁定，學生之後登入會看不到課表。`, current);
+    if (input === null) return;                       // 按取消
+    const email = input.trim().toLowerCase();
+
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { alert('Email 格式不正確'); return; }
+    if (email === current) return;
+    if (!email && !confirm(`確定要解除「${name}」的帳號綁定嗎？\n解除後他登入會看不到課表，需要重新綁定。`)) return;
+
+    try {
+        // 同一個 Email 只能綁一位學生：已經綁在別人身上，要先解除那一位
+        if (email) {
+            const dup = await getDocs(query(collection(db, 'students'), where('email', '==', email)));
+            const others = dup.docs.filter((d) => d.id !== name);
+            if (others.length > 0) {
+                const names = others.map((d) => d.id).join('、');
+                if (!confirm(`這個 Email 目前綁在「${names}」。\n確定改綁到「${name}」嗎？（會解除「${names}」的綁定）`)) return;
+                for (const d of others) await setDoc(doc(db, 'students', d.id), { email: '' }, { merge: true });
+            }
+        }
+        await setDoc(doc(db, 'students', name), { email, isStudent: true }, { merge: true });
+        setProfileEmail(email);
+        renderStudentDbPanel({ keepProfile: true });
+        alert(email ? `✅ 已綁定：${email}` : '已解除綁定');
+    } catch (err) {
+        console.error('修改 Email 失敗:', err);
+        alert('修改失敗，請稍後再試');
+    }
+};
+
 window.deleteStudentFromProfile = function () {
     if (currentProfileStudent) deleteStudent(currentProfileStudent);
 };
@@ -442,12 +500,12 @@ window.renderStudentProfileDetails = function () {
 };
 
 // 取得學生資料
-async function renderStudentDbPanel() {
+async function renderStudentDbPanel(opts = {}) {
     const listEl = document.getElementById('student-db-list');
     const template = document.getElementById('student-row-template');
 
     if (!listEl || !template) return;
-    closeStudentProfile();
+    if (!opts.keepProfile) closeStudentProfile();   // 修改 Email 後重畫清單時，不要把人踢出個人頁
     
 
     listEl.innerHTML = '<p class="no-data-hint">讀取中...</p>';
@@ -467,7 +525,7 @@ async function renderStudentDbPanel() {
 
             if (!data.email && !data.isStudent) return;
 
-            const emailText = data.email ? data.email : '尚未註冊帳號';
+            const emailText = data.email ? data.email : '尚未綁定帳號';
             const priceText = data.defaultPrice !== undefined ? `$${data.defaultPrice}` : '—';
             const row = template.content.cloneNode(true);
 
@@ -483,6 +541,7 @@ async function renderStudentDbPanel() {
             nameEl.textContent = `▸ ${name}`;
             metaEl.textContent =
                 `${emailText} · 預設學費 ${priceText}`;
+            metaEl.classList.toggle('is-unbound', !data.email);   // 沒綁定帳號的學生用橘色提醒
 
             // 點擊學生列 → 展開 / 收合詳細資料
             rowClickable.addEventListener('click', () => {
@@ -808,8 +867,18 @@ window.addStudent = async function () {
 
 // 刪除學生: 只會刪除 students collection 裡的對照資料，不會動到已經排好的課程紀錄
 window.deleteStudent = async function (name) {
+    // 已經綁定登入帳號的學生，刪除後他還是能登入、卻會看不到課表，先講清楚
+    let boundEmail = '';
+    try {
+        const snap = await getDoc(doc(db, "students", name));
+        if (snap.exists()) boundEmail = snap.data().email || '';
+    } catch (_) { /* 讀不到就當作沒綁定 */ }
+    const warn = boundEmail
+        ? `\n\n⚠️ 這位學生已經綁定登入帳號（${boundEmail}）。刪除後他還是可以登入，但會看到「找不到你的學生資料」，需要重新綁定姓名。`
+        : '';
+
     const sure = confirm(
-        `確定要刪除學生「${name}」嗎？\n\n這只會刪除他的帳號對照資料與堂數紀錄，不會刪除他已經排過的課程（如果要清課表要另外手動刪除）。`
+        `確定要刪除學生「${name}」嗎？\n\n這只會刪除他的帳號對照資料，不會刪除他已經排過的課程（如果要清課表要另外手動刪除）。${warn}`
     );
     if (!sure) return;
 
@@ -1041,7 +1110,95 @@ function updateOfflineBanner() {
     else clearStudentBanner('offline');
 }
 window.addEventListener('offline', updateOfflineBanner);
-window.addEventListener('online', updateOfflineBanner);
+window.addEventListener('online', () => {
+    updateOfflineBanner();
+    // 之前因為沒網路而找不到學生資料時，恢復連線後自動重試
+    if (currentUser && currentUser.role === 'student' && !currentUser.name && auth.currentUser) {
+        enterStudentMode(auth.currentUser);
+    }
+});
+
+// ------------------------------------------------------------
+// 學生自己重新綁定姓名：登入後找不到學生資料時，在提示條下面放一個輸入框。
+// 做的事跟註冊時一樣（把這個登入 Email 綁到一個姓名上），所以安全性也一樣：
+// 已經綁了別的 Email 的姓名，Firestore 規則會拒絕。
+// ------------------------------------------------------------
+let rebinding = false;
+
+function showStudentRebindForm() {
+    const banner = document.getElementById('student-banner');
+    if (!banner || banner.dataset.kind !== 'notfound') return;
+
+    const wrap = document.createElement('div');
+    wrap.id = 'student-rebind';
+    wrap.className = 'student-rebind';
+
+    const input = document.createElement('input');
+    input.id = 'student-rebind-name';
+    input.type = 'text';
+    input.placeholder = '輸入你的姓名';
+    input.autocomplete = 'off';
+    input.addEventListener('keydown', (e) => { if (e.key === 'Enter') rebindStudentName(input.value); });
+
+    const btn = document.createElement('button');
+    btn.id = 'student-rebind-btn';
+    btn.type = 'button';
+    btn.innerText = '綁定帳號';
+    btn.addEventListener('click', () => rebindStudentName(input.value));
+
+    const msg = document.createElement('div');
+    msg.id = 'student-rebind-msg';
+    msg.className = 'student-rebind-msg';
+
+    wrap.appendChild(input);
+    wrap.appendChild(btn);
+    wrap.appendChild(msg);
+    banner.appendChild(wrap);
+}
+
+async function rebindStudentName(typedName) {
+    if (rebinding) return;
+    const user = auth.currentUser;
+    if (!user || !user.email) return;
+
+    const msgEl = document.getElementById('student-rebind-msg');
+    const btn = document.getElementById('student-rebind-btn');
+    const say = (t) => { if (msgEl) msgEl.innerText = t; };
+    const takenMsg = '這個姓名已經被其他帳號綁定了。請確認姓名是否正確，或聯絡教練。';
+
+    // 打成「測試3(個別)」也一律綁到「測試3」
+    const name = window.baseStudentName((typedName || '').trim());
+    if (!name) { say('請先輸入你的姓名'); return; }
+    const email = user.email.toLowerCase();
+
+    rebinding = true;
+    if (btn) btn.disabled = true;
+    say('綁定中…');
+    try {
+        // 先看這個姓名有沒有已經綁了別人（讀不到就略過，交給 Firestore 規則把關）
+        try {
+            const snap = await getDoc(doc(db, 'students', name));
+            const bound = snap.exists() ? (snap.data().email || '') : '';
+            if (bound && bound.toLowerCase() !== email) { say(takenMsg); return; }
+        } catch (_) { /* 讀不到就直接交給規則 */ }
+
+        await setDoc(doc(db, 'students', name), { email, isStudent: true }, { merge: true });
+    } catch (err) {
+        console.error('重新綁定失敗:', err);
+        say(err && err.code === 'permission-denied'
+            ? takenMsg
+            : (navigator.onLine === false ? '目前沒有網路，請連線後再試。' : '綁定失敗，請稍後再試。'));
+        return;
+    } finally {
+        rebinding = false;
+        if (btn) btn.disabled = false;
+    }
+
+    await enterStudentMode(user);   // 綁定好了，重新載入這位學生的資料
+    if (currentUser && currentUser.name) {
+        alert(`✅ 已綁定為「${name}」。如果看不到課程，請確認這個姓名跟教練登記的是否一致。`);
+    }
+}
 
 // ------------------------------------------------------------
 // 學生端：時間到了自動更新（上完課變灰、下次上課換下一堂、跨日重算）

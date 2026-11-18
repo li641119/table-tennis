@@ -3255,3 +3255,48 @@ html {
 .maintenance-hint { margin: 0 0 12px; font-size: 14px; font-weight: 600; color: #2c3e50; }
 .maintenance-result { margin: 12px 0 0; font-size: 13px; line-height: 1.6; color: #2e7d32; word-break: break-all; }
 
+/* 學生找不到資料時：提示條下面的「輸入姓名重新綁定」 */
+.student-rebind {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 10px;
+}
+.student-rebind input {
+    flex: 1 1 160px;
+    min-width: 0;
+    padding: 10px 12px;
+    border: 1.5px solid #ffcc80;
+    border-radius: 8px;
+    background: #fff;
+    color: #333;
+    font-size: 16px;
+}
+.student-rebind button {
+    flex: 0 0 auto;
+    min-height: 44px;
+    padding: 0 18px;
+    border: none;
+    border-radius: 8px;
+    background: #e65100;
+    color: #fff;
+    font-weight: 700;
+    cursor: pointer;
+}
+.student-rebind button:disabled { opacity: 0.6; cursor: not-allowed; }
+.student-rebind-msg { flex: 1 1 100%; min-height: 18px; font-size: 13px; font-weight: 600; color: #c62828; }
+
+/* 教練端：沒有綁定帳號的學生 */
+.db-meta.is-unbound, #profile-email.is-unbound { color: #e65100; font-weight: 600; }
+.profile-email-edit {
+    margin-left: 6px;
+    padding: 3px 10px;
+    border: 1px solid #cfd8dc;
+    border-radius: 14px;
+    background: #fff;
+    color: #546e7a;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+}
+.profile-email-edit:hover { background: #f4f6f8; }
