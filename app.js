@@ -952,7 +952,7 @@ function renderStudentNextClassCard() {
 
     const d = new Date(`${next.dateStr}T00:00:00`);
     const weekDays = ['日', '一', '二', '三', '四', '五', '六'];
-    const loc = next.course.loc ? ` @ ${next.course.loc}` : '';
+    const loc = next.course.loc ? `（${next.course.loc}）` : '';
     const label = (typeof window.courseTypeLabel === 'function') ? window.courseTypeLabel(next.course.name) : '';
     el.innerText = `${d.getMonth() + 1}/${d.getDate()} (${weekDays[d.getDay()]}) ${next.course.start} - ${next.course.end}${loc}${label ? `（${label}）` : ''}${next.ongoing ? ' · 上課中' : ''}`;
 }
@@ -973,7 +973,6 @@ function resetStudentView() {
     setText('student-total-hours', '—');
     setText('student-total-hours-sub', '');
     setText('student-class-count', '—');
-    setText('student-class-count-sub', '');
     setText('student-next-class', '讀取中...');
     setText('student-notice-content', '讀取中...');
     setText('student-slots-content', '讀取中...');
@@ -1368,14 +1367,21 @@ window.queryMyHistory = function () {
                 <div class="history-breakdown-row">
                     <span class="history-breakdown-name">${payEscape(n)}</span>
                     <span>已上完 ${b.completed.count} 堂（${window.formatHours(b.completed.minutes)} 小時，$${Math.round(b.completed.money).toLocaleString()}）</span>
-                    <span class="history-breakdown-sched">預定 ${b.scheduled.count} 堂（$${Math.round(b.scheduled.money).toLocaleString()}）</span>
+                    <span class="history-breakdown-sched">已預約(未上課) ${b.scheduled.count - b.completed.count} 堂（$${Math.round(b.scheduled.money - b.completed.money).toLocaleString()}）</span>
                 </div>`;
         }).join('') + `</div>`;
     }
 
+    // 已預約(未上課)＝這段期間排進行事曆、但還沒上的課
+    const pending = {
+        count: s.scheduled.count - s.completed.count,
+        minutes: s.scheduled.minutes - s.completed.minutes,
+        money: s.scheduled.money - s.completed.money
+    };
+
     resultEl.innerHTML = `
         <div class="history-result-row"><span class="history-tag history-tag-done">已上完</span>${fmt(s.completed)}</div>
-        <div class="history-result-row"><span class="history-tag history-tag-sched">預定（含已上完）</span>${fmt(s.scheduled)}</div>
+        <div class="history-result-row"><span class="history-tag history-tag-sched">已預約(未上課)</span>${fmt(pending)}</div>
         ${breakdownHtml}
         ${noteHtml}`;
 };
@@ -1810,18 +1816,13 @@ function updateHomePaymentCard() {
     const key = payMonthKey(year, monthIdx);
 
     const amountEl = document.getElementById('student-class-count');
-    const subEl = document.getElementById('student-class-count-sub');
     const coursesReady = Array.isArray(window.courses);
     const { amount, completedAmount } = payComputeAmount(year, monthIdx);
 
+    // 費用卡只顯示「本月累積費用（已上完）」＝這個月已經上完的課的費用
     if (amountEl) {
-        amountEl.innerText = coursesReady ? `$${amount.toLocaleString()}` : '—';
+        amountEl.innerText = coursesReady ? `$${completedAmount.toLocaleString()}` : '—';
         amountEl.style.color = '';
-    }
-    if (subEl) {
-        subEl.innerText = coursesReady && amount > 0
-            ? `已上完 $${completedAmount.toLocaleString()}`
-            : '';
     }
 
     const statusEl = document.getElementById('student-payment-status');
@@ -1987,7 +1988,7 @@ function renderStudentPayPanel() {
     const hoursEl = document.getElementById('pay-hours');
     const breakdownEl = document.getElementById('pay-breakdown');
     if (amountEl) amountEl.innerText = `$${amount.toLocaleString()}`;
-    if (hoursEl) hoursEl.innerText = `預定 ${Number((minutes / 60).toFixed(2))} 小時`;
+    if (hoursEl) hoursEl.innerText = `共 ${Number((minutes / 60).toFixed(2))} 小時`;
     if (breakdownEl) {
         if (amount <= 0) {
             breakdownEl.innerHTML = '';
@@ -1996,7 +1997,7 @@ function renderStudentPayPanel() {
                 ? `<span class="pay-breakdown-line">${parts.map(p => `${payEscape(p.name)} $${p.money.toLocaleString()}`).join('　＋　')}</span>`
                 : '';
             const statusLine = pendingAmount > 0
-                ? `其中已上完 $${completedAmount.toLocaleString()}、尚未上 $${pendingAmount.toLocaleString()}`
+                ? `其中已上完 $${completedAmount.toLocaleString()}、已預約(未上課) $${pendingAmount.toLocaleString()}`
                 : '這個月的課程全部已上完';
             breakdownEl.innerHTML = `${partsLine}<span class="pay-breakdown-line">${statusLine}</span>`;
         }

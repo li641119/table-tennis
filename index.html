@@ -3,7 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>大四行事曆+教練管理系統</title>
+    <title>桌球教學管理系統</title>
+    <!-- LINE、Facebook 等貼上連結時顯示的預覽 -->
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="桌球教學管理系統">
+    <meta property="og:description" content="查看課表、上課紀錄，並回報繳費">
     <link rel="stylesheet" href="cal-gemini.css">
     <link rel="icon" href="data:,">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
@@ -486,7 +490,7 @@
                 <div class="student-header">
                     <div class="student-lesson">
                         <div class="student-stat-card">
-                            <span>本月上課時數(已完成)</span>
+                            <span>本月上課時數(已上完)</span>
                             <div class="student-stat-arrange">
                                 <span class="stat-value" id="student-total-hours">0 小時</span>
                                 <span class="stat-sub" id="student-total-hours-sub"></span>                   
@@ -494,10 +498,9 @@
                         </div>
 
                         <div class="student-stat-card">
-                            <span>本月預定費用</span>
+                            <span>本月累積費用(已上完)</span>
                             <div class="student-stat-arrange">
                                 <span class="stat-value" id="student-class-count">—</span>
-                                <span class="stat-sub" id="student-class-count-sub"></span>
                             </div>
                         </div>
                             
@@ -544,7 +547,7 @@
                 <!-- 右側：課程詳細資訊 -->
                 <div class="month-day-detail" id="student-day-detail">
                     <div class="no-data-hint">點選上面有標色的日期查看上課細節</div>
-                    <div class="no-data-hint">灰色=已完成課程，藍綠色=未完成課程</div>
+                    <div class="no-data-hint">灰色=已上完課程，藍綠色=已預約(未上課)課程</div>
                 </div>
 
             </div>

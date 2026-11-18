@@ -7,7 +7,7 @@ export function toYMD(date) {
 }
 
 // 一堂課「上完了嗎」：日期在今天以前，或今天且下課時間已過。
-// 沒有填下課時間的課一律視為還沒上完，避免被誤判成已完成。
+// 沒有填下課時間的課一律視為還沒上完，避免被誤判成已上完。
 // 月曆、時數統計、金額、學習歷程都用這一個判斷。
 function isLessonCompleted(dStr, endStr, now = new Date()) {
     const todayStr = toYMD(now);
@@ -765,11 +765,6 @@ export function renderIncomePanel() {
         const safeName = name.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
         const money = Math.round(data.money);
 
-        const partsLine = data.parts.length > 1
-            ? `<div class="income-parts">${data.parts.map(p =>
-                `${escapeHtmlText(p.name)} ${(p.mins / 60).toFixed(1)} 小時 · $${Math.round(p.money).toLocaleString()}`
-            ).join('　＋　')}</div>`
-            : '';
 
         let reportTag = '';
         if (isReported) {
@@ -797,8 +792,7 @@ export function renderIncomePanel() {
                     <span>已收款</span>
                 </label>
                 <span class="db-name">${escapeHtmlText(name)}</span>
-                <span class="db-meta">${(data.mins / 60).toFixed(1)} 小時 · $${money.toLocaleString()}</span>
-                ${partsLine}
+                <span class="db-meta">$${money.toLocaleString()}</span>
                 ${reportTag}
             </div>`;
     }).join('');
@@ -1609,7 +1603,7 @@ function getStudentMonthSummary(studentName, year, monthIdx) {
 window.getStudentPeriodSummary = getStudentPeriodSummary;
 window.getStudentMonthSummary = getStudentMonthSummary;
 
-// 學生首頁「本月上課時數」：大字是已上完，小字是本月預定（以今天所在的月份為準）
+// 學生首頁「本月上課時數」：大字是已上完，小字是本月已預約但還沒上的課（以今天所在的月份為準）
 function renderStudentHomeSummary() {
     if (!currentUser || currentUser.role !== 'student' || !currentUser.name) return;
     const now = new Date();
@@ -1617,7 +1611,7 @@ function renderStudentHomeSummary() {
     const hoursEl = document.getElementById('student-total-hours');
     const subEl = document.getElementById('student-total-hours-sub');
     if (hoursEl) hoursEl.innerText = `${formatHours(s.completed.minutes)} 小時`;
-    if (subEl) subEl.innerText = `本月預定 ${formatHours(s.scheduled.minutes)} 小時`;
+    if (subEl) subEl.innerText = `本月已預約(未上課) ${formatHours(Math.max(0, s.scheduled.minutes - s.completed.minutes))} 小時`;
 }
 
 // ------------------------------------------------------------

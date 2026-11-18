@@ -2409,7 +2409,8 @@ html {
     .month-calendar-header h3 { margin: 0; font-size: 16px; }
     .month-calendar-grid { gap: 4px; width: 100%; min-width: 0; }
     .month-weekday { font-size: 12px; }
-    .month-cell { min-width: 0; min-height: 40px; font-size: 14px; }
+    /* 基本樣式設了 height: 80px，手機版要用 height 才蓋得掉；6 列月曆約 280px，不會塞滿畫面 */
+    .month-cell { min-width: 0; height: 44px; min-height: 0; font-size: 14px; }
 
     .month-day-detail {
         position: static;
@@ -2600,7 +2601,7 @@ html {
         flex: 0 0 auto !important;
     }
 
-    /* 學生列：姓名在左、勾選在右、時數金額換到下一行 */
+    /* 學生列：姓名在左、勾選在右、總金額換到下一行 */
     .income-student-row {
         display: flex;
         flex-wrap: wrap;
@@ -3196,13 +3197,6 @@ html {
     #panel-student-home .student-stat-card > span:first-child { font-size: 12px; }
 }
 
-/* 一位學生的多種課別（個別／團體）明細 */
-.income-parts {
-    flex: 1 1 100%;
-    font-size: 12px;
-    line-height: 1.5;
-    color: #90a4ae;
-}
 
 .pay-breakdown-line { display: block; }
 
@@ -3223,11 +3217,6 @@ html {
 
 .history-breakdown-name { flex: 1 1 100%; font-weight: 700; color: #2c3e50; }
 .history-breakdown-sched { color: #90a4ae; }
-
-@media (max-width: 768px) {
-    /* 手機版學生列的排序（姓名、勾選、時數金額、課別明細、轉帳標籤） */
-    .income-student-row .income-parts { order: 3; }
-}
 
 /* 學生端：找不到資料／讀取失敗時，首頁最上方的提示條 */
 .student-banner {
