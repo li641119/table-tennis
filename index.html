@@ -168,20 +168,20 @@
                             </div>
                         </div>
 
-                        <div class="payment-qr-editors">
-                            <div class="payment-qr-editor">
-                                <label>QR Code 1 名稱<input type="text" id="pay-set-qr1-name" placeholder="例如：街口支付"></label>
-                                <input type="file" id="pay-set-qr1-file" accept="image/*">
-                                <div class="payment-qr-preview" id="pay-set-qr1-preview"></div>
-                                <button type="button" class="payment-qr-remove" onclick="clearPaymentQr(1)">移除圖片</button>
-                            </div>
-                            <div class="payment-qr-editor">
-                                <label>QR Code 2 名稱<input type="text" id="pay-set-qr2-name" placeholder="例如：LINE Pay"></label>
-                                <input type="file" id="pay-set-qr2-file" accept="image/*">
-                                <div class="payment-qr-preview" id="pay-set-qr2-preview"></div>
-                                <button type="button" class="payment-qr-remove" onclick="clearPaymentQr(2)">移除圖片</button>
-                            </div>
+                        <div class="payment-due-setting">
+                            <label>每月繳費截止日（選填）
+                                <input type="number" id="pay-set-due-day" min="1" max="28" inputmode="numeric" placeholder="例如：5">
+                            </label>
+                            <p class="payment-settings-hint">上個月的費用，請學生在每月幾號前繳清（填 1～28）。留空就不設截止日。</p>
                         </div>
+
+                        <div class="payment-linepay-setting">
+                            <label>LINE Pay 付款說明（選填，學生會看到）
+                                <textarea id="pay-set-linepay-note" rows="5" placeholder="例如：請用 LINE Pay「好友轉帳」：&#10;1. 用 LINE 加我好友「王教練」&#10;2. 開啟 LINE → 錢包 → LINE Pay → 轉帳 → 選擇我&#10;3. 輸入金額後確認"></textarea>
+                            </label>
+                            <p class="payment-settings-hint">不放 QR Code（LINE Pay 的收款碼會過期），改用「好友轉帳」。留空就不顯示 LINE Pay 這個選項。銀行代碼與帳號請填在上面的帳戶欄位，學生可以一鍵複製。</p>
+                        </div>
+
                         <button type="button" class="overview-save-btn" onclick="savePaymentSettings()">儲存收款資訊</button>
                     </div>
 
@@ -281,6 +281,7 @@
 
                         <div class="panel-header-row">
                             <button type="button" class="add-student-btn" onclick="addStudent()"> ＋ 新增學生</button>
+                            <button type="button" class="add-student-btn approve-all-btn" onclick="approveAllBoundStudents()">✅ 全部核准</button>
                         </div>
                     </div>
 
@@ -308,6 +309,7 @@
                         <div class="profile-card">
                             <h2 id="profile-name" class="panel-title"></h2>
                             <p class="profile-meta">Email：<span id="profile-email"></span> <button type="button" class="profile-email-edit" onclick="editStudentEmail()">✏️ 修改</button></p>
+                            <p class="profile-meta">核准狀態：<span id="profile-approval"></span> <button type="button" id="profile-approve-btn" class="profile-email-edit hide" onclick="toggleStudentApproval()">核准</button></p>
                             <p class="profile-meta">預設學費：<span id="profile-price"></span></p>
                         </div>
 
@@ -608,8 +610,15 @@
             <div id="report-form-state">
                 <h3>回報已匯款</h3>
                 <p id="report-modal-summary" class="report-modal-summary"></p>
-                <label for="report-last5">匯款帳號後五碼（必填）</label>
-                <input type="text" id="report-last5" inputmode="numeric" maxlength="5" placeholder="例如 12345" autocomplete="off">
+                <label for="report-method">付款方式</label>
+                <select id="report-method" onchange="onReportMethodChange()">
+                    <option value="bank">銀行轉帳</option>
+                    <option value="linepay">LINE Pay（好友轉帳）</option>
+                </select>
+                <div id="report-last5-wrap">
+                    <label for="report-last5">匯款帳號後五碼（必填）</label>
+                    <input type="text" id="report-last5" inputmode="numeric" maxlength="5" placeholder="例如 12345" autocomplete="off">
+                </div>
                 <p id="report-error" class="report-error"></p>
                 <div class="report-modal-actions">
                     <button type="button" class="report-btn" onclick="closeReportModal()">取消</button>

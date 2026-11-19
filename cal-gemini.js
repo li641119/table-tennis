@@ -770,6 +770,7 @@ export function renderIncomePanel() {
         if (isReported) {
             const reportAmount = Number(report.amount) || 0;
             const last5 = String(report.last5 || '').replace(/[^0-9]/g, '');
+            const how = report.method === 'linepay' ? 'LINE Pay' : (last5 ? `後五碼 ${last5}` : '銀行轉帳');
             const timeText = window.payFormatTime ? window.payFormatTime(report.reportedAt) : '';
             const warn = reportAmount !== money
                 ? `<span class="income-report-warn">⚠️ 與目前應收 $${money.toLocaleString()} 不同</span>`
@@ -777,7 +778,7 @@ export function renderIncomePanel() {
             reportTag = `
                 <div class="income-report-tag">
                     <span class="income-report-badge">學生已轉帳</span>
-                    <span>$${reportAmount.toLocaleString()}｜後五碼 ${last5}｜${timeText}</span>
+                    <span>$${reportAmount.toLocaleString()}｜${how}｜${timeText}</span>
                     ${warn}
                     <button type="button" class="cancel-report-btn"
                         onclick="cancelPaymentReport(${year}, ${month}, '${safeName}')">取消回報</button>

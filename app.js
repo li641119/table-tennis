@@ -243,6 +243,8 @@ async function enterStudentMode(user) {
     const studentView = document.getElementById('student-view');
     const sidebar = document.querySelector('.sidebar');
 
+    stopStudentData();
+    stopStudentApprovalWatch();
     resetStudentView();     // 先清掉畫面，避免看到上一位使用者的資料
     let studentName = '';
     let lookupFailed = false;
@@ -273,18 +275,95 @@ async function enterStudentMode(user) {
     if (nameEl) nameEl.innerText = studentName || '同學';
 
     console.log("啟動學生模式，姓名比對用:", studentName || '(尚未找到對應姓名)');
+
+    if (studentName) {
+        // 有對應的學生資料：要等教練核准，才載入課表、繳費與收款資訊
+        watchStudentApproval(user, studentName);
+        return;
+    }
+
+    // 找不到學生資料：維持空狀態，並讓學生自己輸入姓名綁定
     startStudentLiveSync(studentName);
     startStudentPaymentWatchers(studentName);
     watchOverviewForStudent();
 
     updateOfflineBanner();
-    if (!studentName) {
-        showStudentBanner(lookupFailed
-            ? '學生資料讀取失敗，請檢查網路後重新整理頁面。'
-            : '找不到你的學生資料。請在下面輸入你的姓名完成綁定（要跟教練登記的一樣）。',
-            lookupFailed ? 'error' : 'notfound');
-        if (!lookupFailed) showStudentRebindForm();
-    }
+    showStudentBanner(lookupFailed
+        ? '學生資料讀取失敗，請檢查網路後重新整理頁面。'
+        : '找不到你的學生資料。請在下面輸入你的姓名完成綁定（要跟教練登記的一樣）。',
+        lookupFailed ? 'error' : 'notfound');
+    if (!lookupFailed) showStudentRebindForm();
+}
+
+// ------------------------------------------------------------
+// 學生核准：學生註冊（或重新綁定姓名）之後，要等教練核准才看得到課表、繳費與收款資訊。
+// 核准記錄存在 approvedEmails/{小寫 Email}，內容是 { name: 核准的姓名 }。
+// 教練一核准，學生的畫面會即時切換，不用重新整理。
+// ------------------------------------------------------------
+let approvalUnsubStudent = null;
+let studentDataRunning = false;
+let studentPendingReason = null;   // null＝沒有待核准；'pending'＝等待核准；'other'＝核准的是別的姓名
+
+function startStudentData(studentName) {
+    startStudentLiveSync(studentName);
+    startStudentPaymentWatchers(studentName);
+    watchOverviewForStudent();
+    updateOfflineBanner();
+}
+
+function stopStudentData() {
+    if (unsubscribe) { unsubscribe(); unsubscribe = null; }
+    stopStudentPaymentWatchers();
+    stopOverviewForStudent();
+    stopStudentTimeRefresh();
+}
+
+function stopStudentApprovalWatch() {
+    if (approvalUnsubStudent) { approvalUnsubStudent(); approvalUnsubStudent = null; }
+    studentDataRunning = false;
+}
+
+// 還沒核准時：畫面上的欄位改成「—」，並顯示說明
+function showStudentPendingState(studentName, reason) {
+    studentPendingReason = reason;
+    const setText = (id, text) => { const el = document.getElementById(id); if (el) el.innerText = text; };
+    setText('student-total-hours', '—');
+    setText('student-total-hours-sub', '');
+    setText('student-class-count', '—');
+    setText('student-next-class', '—');
+    setText('student-notice-content', '核准後顯示');
+    setText('student-slots-content', '核准後顯示');
+    const statusEl = document.getElementById('student-payment-status');
+    if (statusEl) { statusEl.innerText = '—'; statusEl.style.color = '#90a4ae'; }
+    showStudentBanner(reason === 'other'
+        ? '你的帳號目前核准的是另一個姓名。請聯絡教練重新核准。'
+        : `⏳ 你的帳號（${studentName}）正在等待教練核准。核准後，課程和繳費資訊會自動出現，不用重新整理。`, 'pending');
+}
+
+function watchStudentApproval(user, studentName) {
+    const email = String(user.email).toLowerCase();
+    approvalUnsubStudent = onSnapshot(doc(db, 'approvedEmails', email), (snap) => {
+        const approved = snap.exists() && snap.data().name === studentName;
+        if (approved) {
+            studentPendingReason = null;
+            clearStudentBanner('pending');
+            if (!studentDataRunning) { studentDataRunning = true; startStudentData(studentName); }
+            return;
+        }
+        // 還沒核准，或是被教練撤銷了
+        const wasRunning = studentDataRunning;
+        studentDataRunning = false;
+        if (wasRunning) {
+            stopStudentData();
+            resetStudentView();
+            const nameEl = document.getElementById('student-name-display');
+            if (nameEl) nameEl.innerText = studentName;
+        }
+        showStudentPendingState(studentName, snap.exists() ? 'other' : 'pending');
+    }, (err) => {
+        console.error('讀取核准狀態失敗:', err);
+        showStudentBanner('核准狀態讀取失敗，請檢查網路後重新整理頁面。', 'error');
+    });
 }
 
 onAuthStateChanged(auth, async (user) => {
@@ -319,6 +398,7 @@ onAuthStateChanged(auth, async (user) => {
             if (homeBtn) homeBtn.click();
             startCoachPaymentWatcher();
             startIncomeRecordsWatcher();
+            startCoachApprovalWatcher();
         } else {
             await enterStudentMode(user);
             return;
@@ -342,6 +422,8 @@ onAuthStateChanged(auth, async (user) => {
         stopIncomeRecordsWatcher();
         stopOverviewForStudent();
         stopStudentTimeRefresh();
+        stopStudentApprovalWatch();
+        stopCoachApprovalWatcher();
         resetStudentView();     // 清掉畫面，下一位登入的人不會看到前一位的資料
     }
 });
@@ -365,6 +447,7 @@ function setProfileEmail(email) {
     el.dataset.email = email || '';
     el.innerText = email || '（尚未綁定帳號）';
     el.classList.toggle('is-unbound', !email);
+    refreshProfileApproval();
 }
 
 function openStudentProfile(name, data) {
@@ -398,6 +481,129 @@ window.closeStudentProfile = function () {
 
 // 刪除成功後 deleteStudent 會呼叫 renderStudentDbPanel，裡面已經會回到名單；
 // 按取消則會留在個人頁。
+// ------------------------------------------------------------
+// 教練端：學生核准
+// 核准是跟著「Email＋姓名」走的：學生註冊或綁定姓名之後，要你核准，才看得到課表與收款資訊。
+// ------------------------------------------------------------
+let coachApprovals = {};        // 小寫 Email -> { name, approvedAt }
+let coachStudentsSnap = {};     // 學生姓名 -> 資料（用來算「待核准」的人數）
+let coachApprovalUnsubs = [];
+
+function isStudentApproved(name, email) {
+    if (!email) return false;
+    const a = coachApprovals[String(email).toLowerCase()];
+    return !!a && a.name === name;
+}
+
+function updateStudentsNavBadge() {
+    const btn = document.querySelector('.coach-nav-btn[data-panel="panel-students"]');
+    if (!btn) return;
+    const pending = Object.entries(coachStudentsSnap)
+        .filter(([name, d]) => d.email && !isStudentApproved(name, d.email)).length;
+    let badge = btn.querySelector('.nav-badge');
+    if (pending === 0) { if (badge) badge.remove(); return; }
+    if (!badge) {
+        badge = document.createElement('span');
+        badge.className = 'nav-badge';
+        btn.appendChild(badge);
+    }
+    badge.textContent = pending;
+}
+
+function refreshProfileApproval() {
+    const name = currentProfileStudent;
+    const statusEl = document.getElementById('profile-approval');
+    const btn = document.getElementById('profile-approve-btn');
+    if (!name || !statusEl || !btn) return;
+    const emailEl = document.getElementById('profile-email');
+    const email = ((emailEl && emailEl.dataset.email) || '').toLowerCase();
+    if (!email) {
+        statusEl.innerText = '尚未綁定帳號';
+        statusEl.classList.add('is-pending');
+        btn.classList.add('hide');
+        return;
+    }
+    const approved = isStudentApproved(name, email);
+    statusEl.innerText = approved ? '✅ 已核准（學生看得到課表與收款資訊）' : '⏳ 待核准（核准前，學生看不到課表與收款資訊）';
+    statusEl.classList.toggle('is-pending', !approved);
+    btn.innerText = approved ? '撤銷核准' : '✅ 核准';
+    btn.classList.remove('hide');
+}
+
+function afterApprovalDataChange() {
+    updateStudentsNavBadge();
+    refreshProfileApproval();
+    const panel = document.getElementById('panel-students');
+    if (panel && panel.classList.contains('active')) renderStudentDbPanel({ keepProfile: true });
+}
+
+function startCoachApprovalWatcher() {
+    stopCoachApprovalWatcher();
+    coachApprovalUnsubs.push(onSnapshot(collection(db, 'approvedEmails'), (snap) => {
+        const m = {};
+        snap.forEach((d) => { m[d.id] = d.data(); });
+        coachApprovals = m;
+        afterApprovalDataChange();
+    }, (err) => console.error('監聽核准記錄失敗:', err)));
+    coachApprovalUnsubs.push(onSnapshot(collection(db, 'students'), (snap) => {
+        const m = {};
+        snap.forEach((d) => { m[d.id] = d.data(); });
+        coachStudentsSnap = m;
+        afterApprovalDataChange();
+    }, (err) => console.error('監聽學生資料失敗:', err)));
+}
+
+function stopCoachApprovalWatcher() {
+    coachApprovalUnsubs.forEach((fn) => fn());
+    coachApprovalUnsubs = [];
+    coachApprovals = {};
+    coachStudentsSnap = {};
+    updateStudentsNavBadge();
+}
+
+// 個人頁的「核准／撤銷核准」按鈕
+window.toggleStudentApproval = async function () {
+    const name = currentProfileStudent;
+    if (!name) return;
+    const emailEl = document.getElementById('profile-email');
+    const email = ((emailEl && emailEl.dataset.email) || '').toLowerCase();
+    if (!email) { alert('這位學生還沒有綁定帳號，沒有可以核准的對象'); return; }
+
+    try {
+        if (isStudentApproved(name, email)) {
+            if (!confirm(`確定要撤銷「${name}」（${email}）的核准嗎？\n撤銷後他看不到課表和收款資訊，直到你再次核准。`)) return;
+            await deleteDoc(doc(db, 'approvedEmails', email));
+        } else {
+            await setDoc(doc(db, 'approvedEmails', email), { name, approvedAt: new Date().toISOString() });
+        }
+    } catch (err) {
+        console.error('核准操作失敗:', err);
+        alert('操作失敗，請稍後再試');
+    }
+};
+
+// 學生清單上方的「全部核准」：一次核准所有已綁定、但還沒核准的學生（建議先看過名單）
+window.approveAllBoundStudents = async function () {
+    const pending = Object.entries(coachStudentsSnap)
+        .filter(([name, d]) => d.email && !isStudentApproved(name, d.email));
+    if (pending.length === 0) { alert('目前沒有待核准的學生'); return; }
+
+    const list = pending.map(([name, d]) => `・${name}（${String(d.email).toLowerCase()}）`).join('\n');
+    if (!confirm(`確定要核准以下 ${pending.length} 位學生嗎？\n\n${list}\n\n核准後他們就看得到自己的課表和收款資訊。請先確認每個 Email 都是你認識的學生。`)) return;
+
+    let ok = 0, failed = 0;
+    for (const [name, d] of pending) {
+        try {
+            await setDoc(doc(db, 'approvedEmails', String(d.email).toLowerCase()), { name, approvedAt: new Date().toISOString() });
+            ok++;
+        } catch (err) {
+            failed++;
+            console.error(`核准 ${name} 失敗:`, err);
+        }
+    }
+    alert(`已核准 ${ok} 位${failed ? `，失敗 ${failed} 位` : ''}`);
+};
+
 // 教練端：修改（或解除）這位學生綁定的登入 Email
 window.editStudentEmail = async function () {
     const name = currentProfileStudent;
@@ -425,6 +631,10 @@ window.editStudentEmail = async function () {
             }
         }
         await setDoc(doc(db, 'students', name), { email, isStudent: true }, { merge: true });
+        // 核准是跟著「Email＋姓名」走的：舊 Email 的核准撤掉；你親自設定的新 Email 視為已信任，直接核准
+        const oldApproval = current ? coachApprovals[current] : null;
+        if (current && oldApproval && oldApproval.name === name) await deleteDoc(doc(db, 'approvedEmails', current));
+        if (email) await setDoc(doc(db, 'approvedEmails', email), { name, approvedAt: new Date().toISOString(), by: 'coach' });
         setProfileEmail(email);
         renderStudentDbPanel({ keepProfile: true });
         alert(email ? `✅ 已綁定：${email}` : '已解除綁定');
@@ -539,9 +749,12 @@ async function renderStudentDbPanel(opts = {}) {
             const deleteBtn = row.querySelector('.delete-student-btn');
             
             nameEl.textContent = `▸ ${name}`;
+            const approved = isStudentApproved(name, data.email);
+            const approvalText = data.email ? (approved ? ' · ✅ 已核准' : ' · ⏳ 待核准') : '';
             metaEl.textContent =
-                `${emailText} · 預設學費 ${priceText}`;
+                `${emailText} · 預設學費 ${priceText}${approvalText}`;
             metaEl.classList.toggle('is-unbound', !data.email);   // 沒綁定帳號的學生用橘色提醒
+            metaEl.classList.toggle('is-pending', !!data.email && !approved);   // 已綁定但還沒核准，也用橘色提醒
 
             // 點擊學生列 → 展開 / 收合詳細資料
             rowClickable.addEventListener('click', () => {
@@ -884,6 +1097,10 @@ window.deleteStudent = async function (name) {
 
     try {
         await deleteDoc(doc(db, "students", name));
+        if (boundEmail) {
+            const approval = coachApprovals[boundEmail.toLowerCase()];
+            if (approval && approval.name === name) await deleteDoc(doc(db, 'approvedEmails', boundEmail.toLowerCase()));
+        }
         alert(`已刪除學生：${name}`);
         renderStudentDbPanel();
     } catch (err) {
@@ -1077,6 +1294,9 @@ function resetStudentView() {
         pn.classList.toggle('active', pn.dataset.panelId === 'panel-student-home'));
 
     clearStudentBanner();
+    const dueCard = document.getElementById('student-due-card');
+    if (dueCard) dueCard.remove();
+    studentPendingReason = null;
 }
 
 // 學生首頁最上方的提示條。kind：'error'（讀取失敗）、'notfound'（找不到學生資料）、'offline'（離線）。
@@ -1107,7 +1327,12 @@ function clearStudentBanner(kind) {
 function updateOfflineBanner() {
     if (!currentUser || currentUser.role !== 'student') return;
     if (navigator.onLine === false) showStudentBanner('目前沒有網路連線，畫面上是上次載入的資料。', 'offline');
-    else clearStudentBanner('offline');
+    else {
+        clearStudentBanner('offline');
+        if (studentPendingReason && !document.getElementById('student-banner') && currentUser && currentUser.name) {
+            showStudentPendingState(currentUser.name, studentPendingReason);
+        }
+    }
 }
 window.addEventListener('offline', updateOfflineBanner);
 window.addEventListener('online', () => {
@@ -1605,9 +1830,10 @@ let payStudentIncomeMap = {};
 let paySettingsError = false;   // 收款資訊讀取失敗
 let payIncomeError = false;     // 收款紀錄讀取失敗
 let payReportError = false;     // 匯款回報讀取失敗
+let payIncomeLoaded = false;    // 收款紀錄第一次讀回來了嗎
+let payReportLoaded = false;    // 匯款回報第一次讀回來了嗎
 let payUnsubCoach = null;
 let payUnsubStudent = [];
-let payQrDraft = { 1: null, 2: null };
 let payYear = new Date().getFullYear();
 let payMonthIdx = new Date().getMonth();
 let payCurrentAmount = 0;
@@ -1751,14 +1977,6 @@ window.cancelPaymentReport = async function (year, monthIdx, studentName) {
 };
 
 // ---------- 教練端：收款資訊設定 ----------
-function renderPayQrPreview(slot) {
-    const el = document.getElementById(`pay-set-qr${slot}-preview`);
-    if (!el) return;
-    el.innerHTML = payQrDraft[slot]
-        ? `<img src="${payQrDraft[slot]}" alt="QR Code ${slot}">`
-        : '<span class="no-data-hint">尚未上傳</span>';
-}
-
 // 取得兩組帳戶：新格式用 accounts 陣列；舊格式（只有一組）自動當成帳戶 1
 function getPayAccounts(s) {
     s = s || {};
@@ -1781,57 +1999,6 @@ function getPayAccounts(s) {
     }));
 }
 
-function payCompressImage(file) {
-    return new Promise((resolve, reject) => {
-        const url = URL.createObjectURL(file);
-        const img = new Image();
-        img.onload = () => {
-            URL.revokeObjectURL(url);
-            const encode = (maxSide, quality) => {
-                const scale = Math.min(1, maxSide / Math.max(img.width, img.height));
-                const w = Math.max(1, Math.round(img.width * scale));
-                const h = Math.max(1, Math.round(img.height * scale));
-                const canvas = document.createElement('canvas');
-                canvas.width = w;
-                canvas.height = h;
-                const ctx = canvas.getContext('2d');
-                ctx.fillStyle = '#ffffff';   // JPEG 沒有透明，先鋪白底，避免透明 QR 變黑底
-                ctx.fillRect(0, 0, w, h);
-                ctx.drawImage(img, 0, 0, w, h);
-                return canvas.toDataURL('image/jpeg', quality);
-            };
-            for (const [side, q] of [[480, 0.88], [480, 0.7], [360, 0.7], [320, 0.6]]) {
-                const out = encode(side, q);
-                if (out.length <= 300000) { resolve(out); return; }
-            }
-            reject(new Error('圖片太大，請換一張較小的圖'));
-        };
-        img.onerror = () => {
-            URL.revokeObjectURL(url);
-            reject(new Error('無法讀取這個圖片檔'));
-        };
-        img.src = url;
-    });
-}
-
-async function handlePayQrFile(slot, file) {
-    if (!file) return;
-    if (!file.type.startsWith('image/')) { alert('請選擇圖片檔'); return; }
-    try {
-        payQrDraft[slot] = await payCompressImage(file);
-        renderPayQrPreview(slot);
-    } catch (err) {
-        alert(err.message || '圖片處理失敗');
-    }
-}
-
-window.clearPaymentQr = function (slot) {
-    payQrDraft[slot] = null;
-    const input = document.getElementById(`pay-set-qr${slot}-file`);
-    if (input) input.value = '';
-    renderPayQrPreview(slot);
-};
-
 async function loadPaymentSettingsEditor() {
     try {
         const snap = await getDoc(doc(db, 'settings', 'payment'));
@@ -1847,12 +2014,8 @@ async function loadPaymentSettingsEditor() {
             setVal(`pay-set-acc${n}-holder`, a.holder);
         });
 
-        setVal('pay-set-qr1-name', s.qr1 && s.qr1.name);
-        setVal('pay-set-qr2-name', s.qr2 && s.qr2.name);
-        payQrDraft[1] = (s.qr1 && s.qr1.dataUrl) || null;
-        payQrDraft[2] = (s.qr2 && s.qr2.dataUrl) || null;
-        renderPayQrPreview(1);
-        renderPayQrPreview(2);
+        setVal('pay-set-due-day', s.dueDay);
+        setVal('pay-set-linepay-note', s.linePayNote);
     } catch (err) {
         console.error('讀取收款資訊失敗:', err);
     }
@@ -1860,10 +2023,6 @@ async function loadPaymentSettingsEditor() {
 
 window.savePaymentSettings = async function () {
     const val = (id) => (document.getElementById(id)?.value || '').trim();
-    const qrEntry = (slot) => payQrDraft[slot]
-        ? { name: val(`pay-set-qr${slot}-name`) || `QR Code ${slot}`, dataUrl: payQrDraft[slot] }
-        : null;
-
     const accounts = [1, 2].map((n) => ({
         label: val(`pay-set-acc${n}-label`),
         bankName: val(`pay-set-acc${n}-bank-name`),
@@ -1876,15 +2035,26 @@ window.savePaymentSettings = async function () {
     // 如果有學生的手機還卡在舊版網頁（快取），至少還看得到一組帳戶，不會變成空白。
     const primary = accounts.find((a) => a.account) || accounts[0];
 
+    // 每月繳費截止日：留空代表不設定
+    const dueRaw = val('pay-set-due-day');
+    let dueDay = null;
+    if (dueRaw !== '') {
+        dueDay = Number(dueRaw);
+        if (!Number.isInteger(dueDay) || dueDay < 1 || dueDay > 28) {
+            alert('繳費截止日請填 1～28 之間的整數（留空代表不設定）');
+            return;
+        }
+    }
+
     try {
         await setDoc(doc(db, 'settings', 'payment'), {
             accounts,
+            dueDay,
             bankName: primary.bankName,
             bankCode: primary.bankCode,
             account: primary.account,
             holder: primary.holder,
-            qr1: qrEntry(1),
-            qr2: qrEntry(2),
+            linePayNote: val('pay-set-linepay-note'),
             updatedAt: new Date().toISOString()
         });
         alert('✅ 收款資訊已儲存，學生端會同步更新');
@@ -1895,13 +2065,6 @@ window.savePaymentSettings = async function () {
 };
 
 
-document.addEventListener('DOMContentLoaded', () => {
-    [1, 2].forEach((slot) => {
-        const input = document.getElementById(`pay-set-qr${slot}-file`);
-        if (input) input.addEventListener('change', (e) => handlePayQrFile(slot, e.target.files[0]));
-    });
-});
-
 // ---------- 學生端：監聽自己的繳費狀態、回報、收款資訊 ----------
 function stopStudentPaymentWatchers() {
     payUnsubStudent.forEach((fn) => fn());
@@ -1909,6 +2072,7 @@ function stopStudentPaymentWatchers() {
     payStudentReports = {};
     payStudentIncomeMap = {};
     paySettingsError = payIncomeError = payReportError = false;
+    payIncomeLoaded = payReportLoaded = false;
 }
 
 function startStudentPaymentWatchers(studentName) {
@@ -1928,6 +2092,7 @@ function startStudentPaymentWatchers(studentName) {
             });
             payStudentIncomeMap = map;
             payIncomeError = false;
+            payIncomeLoaded = true;
             refreshStudentPaymentViews();
         },
         (err) => { console.error('監聽繳費狀態失敗:', err); payIncomeError = true; refreshStudentPaymentViews(); }
@@ -1943,6 +2108,7 @@ function startStudentPaymentWatchers(studentName) {
             });
             payStudentReports = reports;
             payReportError = false;
+            payReportLoaded = true;
             refreshStudentPaymentViews();
         },
         (err) => { console.error('監聽匯款回報失敗:', err); payReportError = true; refreshStudentPaymentViews(); }
@@ -1962,8 +2128,97 @@ function startStudentPaymentWatchers(studentName) {
 function refreshStudentPaymentViews() {
     if (!currentUser || currentUser.role !== 'student') return;
     updateHomePaymentCard();
+    renderDueReminder();
     const payPanel = document.getElementById('panel-student-pay');
     if (payPanel && payPanel.classList.contains('active')) renderStudentPayPanel();
+}
+
+// ------------------------------------------------------------
+// 費用提醒：上個月（或更早）還沒繳的費用，在首頁最上方提醒；教練可設定每月繳費截止日。
+// 第 M 月的費用，截止日是「下個月的 dueDay 號」（例如截止日設 5：11 月的費用要在 12/5 前繳）。
+// ------------------------------------------------------------
+function payDueInfo(year, monthIdx) {
+    const dueDay = Number(paySettings && paySettings.dueDay);
+    if (!Number.isInteger(dueDay) || dueDay < 1 || dueDay > 28) return null;   // 教練沒設截止日
+    const now = new Date();
+    if (payMonthNumber(year, monthIdx) >= payMonthNumber(now.getFullYear(), now.getMonth())) return null;   // 本月的費用還沒到截止
+    const dueDate = new Date(year, monthIdx + 1, dueDay);
+    const label = `${dueDate.getMonth() + 1}/${dueDate.getDate()}`;
+    const overdue = toYMD(now) > toYMD(dueDate);   // 截止日當天還算準時，隔天才算逾期
+    return { dueDate, label, overdue, text: overdue ? `已逾期（應於 ${label} 前繳費）` : `請於 ${label} 前繳費` };
+}
+
+// 找出「本月以前、有費用、還沒繳清」的月份（由舊到新）
+function getUnpaidPastMonths() {
+    const now = new Date();
+    const curNum = payMonthNumber(now.getFullYear(), now.getMonth());
+    const result = [];
+    for (let num = payEarliestMonthNumber(); num < curNum; num++) {
+        const year = Math.floor(num / 12);
+        const monthIdx = num % 12;
+        const { amount } = payComputeAmount(year, monthIdx);
+        if (amount <= 0) continue;
+        if (isStudentMonthPaid(year, monthIdx)) continue;
+        const report = payStudentReports[payMonthKey(year, monthIdx)];
+        result.push({ year, monthIdx, amount, reported: !!report && report.status === 'reported', due: payDueInfo(year, monthIdx) });
+    }
+    return result;
+}
+
+// 點「前往繳費」：切到繳費分頁，並停在那個月
+function goToPayMonth(year, monthIdx) {
+    payYear = year;
+    payMonthIdx = monthIdx;
+    const tab = document.querySelector('.student-nav-btn[data-panel="panel-student-pay"]');
+    if (tab) tab.click();   // 分頁切換時會自動畫出 payYear / payMonthIdx 這個月
+}
+
+function renderDueReminder() {
+    const old = document.getElementById('student-due-card');
+    if (old) old.remove();
+    if (!currentUser || currentUser.role !== 'student' || !currentUser.name) return;
+    // 資料還沒讀完、或讀取失敗時不顯示，免得把「還在讀」誤報成「沒繳費」
+    if (!Array.isArray(window.courses) || !payIncomeLoaded || !payReportLoaded || payIncomeError || payReportError) return;
+
+    const items = getUnpaidPastMonths();
+    if (items.length === 0) return;
+    const host = document.querySelector('#panel-student-home .panel-inner') || document.getElementById('panel-student-home');
+    if (!host) return;
+
+    const needAction = items.filter((it) => !it.reported);
+    const overdue = needAction.some((it) => it.due && it.due.overdue);
+
+    const card = document.createElement('div');
+    card.id = 'student-due-card';
+    card.className = `student-due-card ${needAction.length === 0 ? 'is-info' : overdue ? 'is-overdue' : 'is-warn'}`;
+
+    const title = document.createElement('div');
+    title.className = 'student-due-title';
+    title.innerText = needAction.length === 0 ? '📌 費用確認中' : overdue ? '⚠️ 有費用已逾期' : '⚠️ 還有費用沒繳';
+    card.appendChild(title);
+
+    items.forEach((it) => {
+        const row = document.createElement('div');
+        row.className = 'student-due-row';
+
+        const info = document.createElement('span');
+        info.className = 'student-due-info';
+        const state = it.reported ? '已回報，等待教練確認' : (it.due ? it.due.text : '尚未繳費');
+        info.innerText = `${it.monthIdx + 1} 月　$${it.amount.toLocaleString()}　${state}`;
+        row.appendChild(info);
+
+        if (!it.reported) {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.innerText = '前往繳費';
+            btn.addEventListener('click', () => goToPayMonth(it.year, it.monthIdx));
+            row.appendChild(btn);
+        }
+        card.appendChild(row);
+    });
+
+    const banner = document.getElementById('student-banner');
+    host.insertBefore(card, banner ? banner.nextSibling : host.firstChild);
 }
 
 function updateHomePaymentCard() {
@@ -2046,9 +2301,9 @@ function renderPayMethodHtml(amount) {
     const accounts = getPayAccounts(s)
         .map((a, i) => ({ ...a, idx: i }))
         .filter((a) => a.account);
-    const qrs = [s.qr1, s.qr2].filter((q) => q && q.dataUrl);
+    const linePayNote = String(s.linePayNote || '').trim();
 
-    if (accounts.length === 0 && qrs.length === 0) {
+    if (accounts.length === 0 && !linePayNote) {
         const msg = paySettingsError
             ? '收款資訊暫時無法讀取，請稍後再試，或直接聯繫教練。'
             : '教練尚未設定收款資訊，請直接聯繫教練。';
@@ -2057,8 +2312,19 @@ function renderPayMethodHtml(amount) {
 
     let html = '';
 
+    if (linePayNote) {
+        html += `
+            <div class="pay-card pay-card-linepay">
+                <h3 class="pay-section-title">💚 LINE Pay（好友轉帳）</h3>
+                <p class="pay-note">${payEscape(linePayNote)}</p>
+                <div class="pay-info-row"><span>金額</span><strong>$${amount.toLocaleString()}</strong></div>
+                <div class="pay-copy-row">
+                    <button type="button" onclick="copyPayInfo('amount', 0, this)">複製金額</button>
+                </div>
+            </div>`;
+    }
+
     accounts.forEach((a) => {
-        const bankText = `${payEscape(a.bankName)}${a.bankCode ? `（代碼 ${payEscape(a.bankCode)}）` : ''}`;
         const title = a.label
             ? `🏦 ${payEscape(a.label)}`
             : (accounts.length > 1 ? `🏦 銀行轉帳（帳戶 ${a.idx + 1}）` : '🏦 銀行轉帳');
@@ -2066,11 +2332,13 @@ function renderPayMethodHtml(amount) {
         html += `
             <div class="pay-card">
                 <h3 class="pay-section-title">${title}</h3>
-                ${bankText ? `<div class="pay-info-row"><span>銀行</span><strong>${bankText}</strong></div>` : ''}
+                ${a.bankName ? `<div class="pay-info-row"><span>銀行</span><strong>${payEscape(a.bankName)}</strong></div>` : ''}
+                ${a.bankCode ? `<div class="pay-info-row"><span>銀行代碼</span><strong>${payEscape(a.bankCode)}</strong></div>` : ''}
                 <div class="pay-info-row"><span>帳號</span><strong>${payEscape(a.account)}</strong></div>
                 ${a.holder ? `<div class="pay-info-row"><span>戶名</span><strong>${payEscape(a.holder)}</strong></div>` : ''}
                 <div class="pay-info-row"><span>金額</span><strong>$${amount.toLocaleString()}</strong></div>
                 <div class="pay-copy-row">
+                    ${a.bankCode ? `<button type="button" onclick="copyPayInfo('code', ${a.idx}, this)">複製銀行代碼</button>` : ''}
                     <button type="button" onclick="copyPayInfo('account', ${a.idx}, this)">複製帳號</button>
                     <button type="button" onclick="copyPayInfo('amount', ${a.idx}, this)">複製金額</button>
                     <button type="button" onclick="copyPayInfo('all', ${a.idx}, this)">複製全部資訊</button>
@@ -2078,27 +2346,15 @@ function renderPayMethodHtml(amount) {
             </div>`;
     });
 
-    if (qrs.length > 0) {
-        html += `
-            <div class="pay-card">
-                <h3 class="pay-section-title">📱 行動支付 QR Code</h3>
-                <div class="pay-qr-grid">
-                    ${qrs.map((q) => `
-                        <figure class="pay-qr">
-                            <img src="${q.dataUrl}" alt="${payEscape(q.name)}">
-                            <figcaption>${payEscape(q.name)}</figcaption>
-                        </figure>`).join('')}
-                </div>
-                <p class="pay-qr-hint">掃碼時請輸入金額 $${amount.toLocaleString()}</p>
-            </div>`;
-    }
     return html;
 }
 
 window.copyPayInfo = async function (kind, idx, btn) {
     const a = getPayAccounts(paySettings)[idx] || {};
     let text = '';
-    if (kind === 'account') {
+    if (kind === 'code') {
+        text = a.bankCode || '';
+    } else if (kind === 'account') {
         text = a.account || '';
     } else if (kind === 'amount') {
         text = String(payCurrentAmount);
@@ -2123,6 +2379,12 @@ window.copyPayInfo = async function (kind, idx, btn) {
 
 function renderStudentPayPanel() {
     if (!currentUser || currentUser.role !== 'student' || !currentUser.name) return;
+    if (studentPendingReason) {
+        setPayBanner('none', '你的帳號還在等待教練核准，核准後才能查看繳費資訊。');
+        const m = document.getElementById('pay-method-area'); if (m) m.innerHTML = '';
+        const r = document.getElementById('pay-report-area'); if (r) r.innerHTML = '';
+        return;
+    }
 
     const now = new Date();
     const maxNum = payMonthNumber(now.getFullYear(), now.getMonth());
@@ -2189,11 +2451,12 @@ function renderStudentPayPanel() {
 
     if (report && report.status === 'reported') {
         setPayBanner('reported',
-            `⏳ 已回報，等待教練確認<br><small>後五碼 ${payEscape(report.last5)}｜${payEscape(payFormatTime(report.reportedAt))}</small>`);
+            `⏳ 已回報，等待教練確認<br><small>${report.method === 'linepay' ? 'LINE Pay' : (report.last5 ? `後五碼 ${payEscape(report.last5)}` : '銀行轉帳')}｜${payEscape(payFormatTime(report.reportedAt))}</small>`);
         if (reportEl) reportEl.innerHTML =
             `<button type="button" class="pay-report-btn" disabled>已回報，等待教練確認</button>`;
     } else {
-        setPayBanner('unpaid', '尚未繳費');
+        const due = payDueInfo(payYear, payMonthIdx);
+        setPayBanner('unpaid', due ? `尚未繳費<br><small>${due.text}</small>` : '尚未繳費');
         if (reportEl) reportEl.innerHTML =
             `<button type="button" class="pay-report-btn" onclick="openReportModal()">已匯款，回報繳費狀況</button>`;
     }
@@ -2204,13 +2467,30 @@ window.openReportModal = function () {
     if (payCurrentAmount <= 0) return;
     document.getElementById('report-modal-summary').innerText =
         `${payYear} 年 ${payMonthIdx + 1} 月　應繳 $${payCurrentAmount.toLocaleString()}`;
+
+    // 預設的付款方式：教練只設了 LINE Pay 說明、沒設銀行帳號時，預設選 LINE Pay
+    const hasBank = getPayAccounts(paySettings).some((a) => a.account);
+    const hasLinePay = !!String((paySettings && paySettings.linePayNote) || '').trim();
+    const methodEl = document.getElementById('report-method');
+    if (methodEl) methodEl.value = (!hasBank && hasLinePay) ? 'linepay' : 'bank';
+
     const input = document.getElementById('report-last5');
     input.value = '';
     document.getElementById('report-error').textContent = '';
     document.getElementById('report-form-state').classList.remove('hide');
     document.getElementById('report-done-state').classList.add('hide');
     document.getElementById('report-modal').classList.remove('hide');
-    input.focus();
+    onReportMethodChange();
+    if (!methodEl || methodEl.value === 'bank') input.focus();
+};
+
+// 選 LINE Pay 時不需要填後五碼，把那一欄收起來
+window.onReportMethodChange = function () {
+    const methodEl = document.getElementById('report-method');
+    const wrap = document.getElementById('report-last5-wrap');
+    const errEl = document.getElementById('report-error');
+    if (wrap) wrap.classList.toggle('hide', !!methodEl && methodEl.value === 'linepay');
+    if (errEl) errEl.textContent = '';
 };
 
 window.closeReportModal = function () {
@@ -2218,14 +2498,20 @@ window.closeReportModal = function () {
 };
 
 window.submitPaymentReport = async function () {
-    const last5 = document.getElementById('report-last5').value.trim();
+    const methodEl = document.getElementById('report-method');
+    const method = methodEl && methodEl.value === 'linepay' ? 'linepay' : 'bank';
     const errEl = document.getElementById('report-error');
     const submitBtn = document.getElementById('report-submit-btn');
     errEl.textContent = '';
 
-    if (!/^\d{5}$/.test(last5)) {
-        errEl.textContent = '請輸入 5 位數字的匯款帳號後五碼';
-        return;
+    // 只有銀行轉帳需要後五碼；LINE Pay 在你的 LINE Pay 紀錄裡就看得到轉帳人與金額
+    let last5 = '';
+    if (method === 'bank') {
+        last5 = document.getElementById('report-last5').value.trim();
+        if (!/^\d{5}$/.test(last5)) {
+            errEl.textContent = '請輸入 5 位數字的匯款帳號後五碼';
+            return;
+        }
     }
     if (!currentUser || !currentUser.name || payCurrentAmount <= 0) return;
 
@@ -2236,6 +2522,7 @@ window.submitPaymentReport = async function () {
             year: payYear,
             month: payMonthIdx + 1,
             amount: payCurrentAmount,
+            method,
             last5,
             status: 'reported',
             reportedAt: new Date().toISOString()
