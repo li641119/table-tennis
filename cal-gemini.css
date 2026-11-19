@@ -2574,8 +2574,6 @@ html {
         flex: 1 1 100%;
     }
 
-    .student-stat-card { min-width: 0; padding: 12px 14px; }
-
     /* 大字在上、小字在下，不再並排互相擠壓 */
     .student-stat-arrange {
         display: flex;
@@ -2596,12 +2594,6 @@ html {
         font-size: clamp(16px, 5vw, 20px);
     }
 
-    .student-stat-card .stat-sub {
-        display: block;
-        font-size: 12px;
-        line-height: 1.4;
-        white-space: normal;
-    }
 
     #panel-student-home > * { max-width: 100%; min-width: 0; }
 }
@@ -2724,15 +2716,7 @@ html {
     font-variant-numeric: tabular-nums;
 }
 
-#panel-student-home .stat-sub {
-    display: block;
-    font-size: 11.5px;
-    line-height: 1.4;
-    color: #90a4ae;
-    white-space: normal;
-}
 
-#panel-student-home .stat-sub:empty { display: none; }
 
 #panel-student-home :has(> #student-payment-status) {
     padding: 12px 0;
@@ -2916,16 +2900,19 @@ html {
     display: contents;
 }
 
+/* 統計卡（本月上課時數、本月累積費用）：跟下面「下次上課」等區塊同一種樣式——
+   沒有方框，只有標題、數字，以及頂端一條細線 */
 #panel-student-home .student-stat-card {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 9px;
     min-width: 0;
-    margin-bottom: 10px;
-    padding: 12px;
-    border-radius: 10px;
-    background: #fff;
-    border: 1.5px solid #d7dfd9;
+    margin: 6px 0;
+    padding: 17px 0 20px;
+    border: 0;
+    border-top: 2px solid var(--student-green);
+    border-radius: 0;
+    background: transparent;
     color: var(--student-ink);
     box-shadow: none;
 }
@@ -2943,23 +2930,15 @@ html {
 
 #panel-student-home .student-stat-card .stat-value {
     margin: 0;
-    color: #253746;
-    font-size: clamp(23px, 7vw, 30px);
+    color: var(--student-ink);
+    font-size: clamp(22px, 6.5vw, 28px);
     font-weight: 600;
     line-height: 1.15;
-    letter-spacing: -.035em;
+    letter-spacing: -.03em;
     font-variant-numeric: tabular-nums;
 }
 
-#panel-student-home .student-stat-card .stat-sub {
-    display: block;
-    margin: 0;
-    color: #929a94;
-    font-size: 12px;
-    line-height: 1.45;
-}
 
-#panel-student-home .student-stat-card .stat-sub:empty { display: none; }
 
 #panel-student-home .student-pay-card {
     grid-column: 1 / -1;
@@ -2969,15 +2948,16 @@ html {
     justify-content: space-between;
     gap: 16px;
     min-width: 0;
-    padding: 20px 0;
+    margin: 6px 0;
+    padding: 17px 0 20px;
     border: 0;
+    border-top: 2px solid var(--student-green);
     border-radius: 0;
     background: transparent;
     box-shadow: none;
     color: var(--student-muted);
     font-size: 13px;
     font-weight: 500;
-    margin: 0;
 }
 
 #panel-student-home #student-payment-status {
@@ -3099,13 +3079,14 @@ html {
     }
 
     #panel-student-home .student-pay-card {
-        padding: 20px 0;
+        padding: 12px 0 14px;
         gap: 10px;
     }
 
     
 
     #panel-student-home .panel-subtitle,
+    #panel-student-home .student-stat-card,
     #panel-student-home .student-next-card,
     #panel-student-home .student-notice-card,
     #panel-student-home .student-slots-card {

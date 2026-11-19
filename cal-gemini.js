@@ -1604,15 +1604,13 @@ function getStudentMonthSummary(studentName, year, monthIdx) {
 window.getStudentPeriodSummary = getStudentPeriodSummary;
 window.getStudentMonthSummary = getStudentMonthSummary;
 
-// 學生首頁「本月上課時數」：大字是已上完，小字是本月已預約但還沒上的課（以今天所在的月份為準）
+// 學生首頁「本月上課時數」：只顯示已上完的時數（以今天所在的月份為準）
 function renderStudentHomeSummary() {
     if (!currentUser || currentUser.role !== 'student' || !currentUser.name) return;
     const now = new Date();
     const s = getStudentMonthSummary(currentUser.name, now.getFullYear(), now.getMonth());
     const hoursEl = document.getElementById('student-total-hours');
-    const subEl = document.getElementById('student-total-hours-sub');
     if (hoursEl) hoursEl.innerText = `${formatHours(s.completed.minutes)} 小時`;
-    if (subEl) subEl.innerText = `本月已預約(未上課) ${formatHours(Math.max(0, s.scheduled.minutes - s.completed.minutes))} 小時`;
 }
 
 // ------------------------------------------------------------

@@ -328,7 +328,6 @@ function showStudentPendingState(studentName, reason) {
     studentPendingReason = reason;
     const setText = (id, text) => { const el = document.getElementById(id); if (el) el.innerText = text; };
     setText('student-total-hours', '—');
-    setText('student-total-hours-sub', '');
     setText('student-class-count', '—');
     setText('student-next-class', '—');
     setText('student-notice-content', '核准後顯示');
@@ -1279,7 +1278,6 @@ function resetStudentView() {
     const setText = (id, text) => { const el = document.getElementById(id); if (el) el.innerText = text; };
     setText('student-name-display', '同學');
     setText('student-total-hours', '—');
-    setText('student-total-hours-sub', '');
     setText('student-class-count', '—');
     setText('student-next-class', '讀取中...');
     setText('student-notice-content', '讀取中...');
@@ -2458,7 +2456,7 @@ function renderStudentPayPanel() {
         const due = payDueInfo(payYear, payMonthIdx);
         setPayBanner('unpaid', due ? `尚未繳費<br><small>${due.text}</small>` : '尚未繳費');
         if (reportEl) reportEl.innerHTML =
-            `<button type="button" class="pay-report-btn" onclick="openReportModal()">已匯款，回報繳費狀況</button>`;
+            `<button type="button" class="pay-report-btn" onclick="openReportModal()">已付款，回報繳費狀況</button>`;
     }
 }
 
