@@ -1677,13 +1677,13 @@ input[type="color"]::-moz-color-swatch {border: none;border-radius: 50%;}
 .pay-month-switcher button:disabled { opacity: 0.35; cursor: not-allowed; }
 #pay-month-label { min-width: 120px; text-align: center; font-weight: 700; font-size: 16px; color: #2c3e50; }
 
-/* 應繳金額：標籤一行、金額在左、時數在右下角 */
-.pay-amount-block { display: grid; grid-template-columns: 1fr auto; align-items: end; gap: 2px 12px; margin-bottom: 8px; }
-.pay-amount-label { grid-column: 1 / -1; font-size: 13px; color: #7f8c8d; }
-.pay-amount { font-size: 32px; font-weight: 800; line-height: 1.15; color: #2c3e50; font-variant-numeric: tabular-nums; }
-.pay-hours { padding-bottom: 4px; font-size: 13px; color: #7f8c8d; }
+/* 應繳金額：「應繳金額 $12,100　　共 17 小時」同一行 */
+.pay-amount-block { display: flex; align-items: baseline; gap: 10px; margin-bottom: 8px; }
+.pay-amount-label { flex: 0 0 auto; font-size: 13px; color: #7f8c8d; white-space: nowrap; }
+.pay-amount { flex: 0 1 auto; min-width: 0; font-size: 30px; font-weight: 800; line-height: 1.15; color: #2c3e50; font-variant-numeric: tabular-nums; }
+.pay-hours { flex: 0 0 auto; margin-left: auto; font-size: 13px; color: #7f8c8d; white-space: nowrap; }
 
-.pay-banner { padding: 10px 14px; border-radius: 10px; font-size: 14px; font-weight: 600; }
+.pay-banner { padding: 8px 12px; border-radius: 10px; font-size: 13.5px; font-weight: 600; }
 .pay-banner small { font-weight: 500; }
 .pay-banner-unpaid { background: #ffebee; color: #c62828; }
 .pay-banner-reported { background: #fff3e0; color: #e65100; }
@@ -1692,49 +1692,25 @@ input[type="color"]::-moz-color-swatch {border: none;border-radius: 50%;}
 
 .pay-section-title { margin: 0 0 10px; font-size: 15px; color: #2c3e50; }
 
-.pay-info-row {
-    display: flex;
-    justify-content: space-between;
-    gap: 12px;
-    padding: 8px 0;
-    border-bottom: 1px solid #f0f2f5;
-    font-size: 14px;
-    color: #7f8c8d;
-}
 
-.pay-info-row strong { color: #2c3e50; text-align: right; word-break: break-all; }
 
-/* 複製按鈕：兩顆一排；單數時最後一顆佔滿一排 */
-.pay-copy-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-top: 12px; }
-.pay-copy-row button:last-child:nth-child(odd) { grid-column: 1 / -1; }
 
-.pay-copy-row button {
-    min-height: 40px;
-    padding: 6px 10px;
-    border: 1px solid #cfd8dc;
-    border-radius: 8px;
-    background: #f8f9fa;
-    color: #2c3e50;
-    font-size: 13px;
-    font-weight: 600;
-    cursor: pointer;
-}
 
-/* 回報按鈕：不再釘在畫面下方，也不要整排撐滿，放在卡片下方置中 */
+/* 回報按鈕：放在最上面那張卡片裡、金額和狀態的正下方，一打開就看得到 */
 .pay-report-btn {
     display: block;
-    width: min(100%, 300px);
-    min-height: 44px;
-    margin: 4px auto 0;
-    padding: 0 20px;
+    width: 100%;
+    min-height: 48px;
+    margin-top: 12px;
     border: none;
     border-radius: 10px;
     background: #2c3e50;
     color: #fff;
-    font-size: 14px;
+    font-size: 15px;
     font-weight: 700;
     cursor: pointer;
 }
+#pay-report-area:empty { display: none; }
 
 .pay-report-btn:disabled { background: #b0bec5; cursor: not-allowed; }
 
@@ -1793,11 +1769,8 @@ input[type="color"]::-moz-color-swatch {border: none;border-radius: 50%;}
 
 
 
-.pay-breakdown {
-    margin: 0 0 12px;
-    font-size: 13px;
-    color: #7f8c8d;
-}
+.pay-breakdown { margin: 0 0 10px; font-size: 12.5px; line-height: 1.6; color: #7f8c8d; }
+.pay-breakdown:empty { display: none; }
 
 .history-result-row {
     display: flex;
@@ -2416,8 +2389,7 @@ html {
         padding: 8px 0;
     }
 
-    .pay-amount { font-size: clamp(26px, 9vw, 32px); }
-    .pay-info-row { flex-wrap: wrap; gap: 4px 12px; }
+    .pay-amount { font-size: clamp(24px, 7.5vw, 30px); }
 
     .data-start-note { margin-top: 12px; }
 
@@ -3283,7 +3255,7 @@ html {
 .payment-linepay-setting { margin-bottom: 16px; }
 .payment-linepay-setting label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; font-weight: 600; color: #546e7a; }
 .payment-settings-card textarea { width: 100%; box-sizing: border-box; padding: 10px 12px; border: 1px solid #ddd; border-radius: 8px; font-family: inherit; font-size: 14px; line-height: 1.6; resize: vertical; }
-.pay-note { margin: 0 0 10px; font-size: 14px; line-height: 1.8; color: #37474f; white-space: pre-line; overflow-wrap: anywhere; }
+.pay-note { margin: 4px 0 0; font-size: 13px; line-height: 1.7; color: #607d8b; white-space: pre-line; overflow-wrap: anywhere; }
 
 /* 回報視窗：付款方式 */
 .report-modal-content select { width: 100%; padding: 12px; margin-bottom: 12px; border: 1.5px solid #ddd; border-radius: 8px; background: #fff; font-size: 16px; box-sizing: border-box; }
@@ -3298,4 +3270,18 @@ html {
 
 /* 教練端：資料讀取被拒絕時的提示條 */
 .coach-banner { margin: 10px 14px 0; padding: 10px 14px; border-radius: 10px; background: #ffebee; color: #c62828; font-size: 13.5px; font-weight: 600; line-height: 1.6; }
+
+/* 付款方式：LINE Pay 與銀行轉帳在同一張卡片裡 */
+.pay-methods .pay-section-title { margin-bottom: 2px; }
+.pay-method-row { padding: 12px 0; border-top: 1px solid #f0f2f5; }
+.pay-method-row:first-of-type { border-top: 0; }
+.pay-method-name { font-size: 15px; font-weight: 700; color: #2c3e50; }
+.pay-bank { margin-top: 10px; }
+.pay-bank + .pay-bank { padding-top: 10px; border-top: 1px dashed #e3e8ec; }
+.pay-bank-head { margin-bottom: 6px; font-size: 14px; font-weight: 600; color: #546e7a; }
+.pay-bank-account { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.pay-bank-number { min-width: 0; font-size: 17px; font-weight: 700; letter-spacing: 0.5px; color: #2c3e50; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.pay-bank-holder { margin-top: 4px; font-size: 13px; color: #7f8c8d; }
+.pay-copy-btn { flex: 0 0 auto; min-height: 36px; padding: 0 14px; border: 1px solid #cfd8dc; border-radius: 8px; background: #f8f9fa; color: #2c3e50; font-size: 13px; font-weight: 600; cursor: pointer; }
+.pay-copy-btn:active { background: #eceff1; }
 

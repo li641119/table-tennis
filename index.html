@@ -176,10 +176,10 @@
                         </div>
 
                         <div class="payment-linepay-setting">
-                            <label>LINE Pay 付款說明（選填，學生會看到）
+                            <label>LINE Pay 補充說明（選填，學生會看到）
                                 <textarea id="pay-set-linepay-note" rows="5" placeholder="例如：請用 LINE Pay「好友轉帳」：&#10;1. 用 LINE 加我好友「王教練」&#10;2. 開啟 LINE → 錢包 → LINE Pay → 轉帳 → 選擇我&#10;3. 輸入金額後確認"></textarea>
                             </label>
-                            <p class="payment-settings-hint">不放 QR Code（LINE Pay 的收款碼會過期），改用「好友轉帳」。留空就不顯示 LINE Pay 這個選項。銀行代碼與帳號請填在上面的帳戶欄位，學生可以一鍵複製。</p>
+                            <p class="payment-settings-hint">學生的「付款方式」裡一定會顯示一行「LINE Pay 好友轉帳」，這裡可以補充，例如你的 LINE 名稱與步驟（可留空）。不放 QR Code（LINE Pay 的收款碼會過期）。銀行代碼與帳號請填在上面的帳戶欄位。</p>
                         </div>
 
                         <button type="button" class="overview-save-btn" onclick="savePaymentSettings()">儲存收款資訊</button>
@@ -596,10 +596,10 @@
                         <span class="pay-hours" id="pay-hours"></span>
                     </div>
                     <p class="pay-breakdown" id="pay-breakdown"></p>
+                    <div id="pay-report-area"></div>
                 </div>
-                
+
                 <div id="pay-method-area"></div>
-                <div id="pay-report-area"></div>
             </div>
                 
         </div>

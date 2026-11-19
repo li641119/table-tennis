@@ -2319,7 +2319,7 @@ function setPayBanner(type, html) {
     el.innerHTML = `<div class="pay-banner pay-banner-${type}">${html}</div>`;
 }
 
-function renderPayMethodHtml(amount) {
+function renderPayMethodHtml() {
     const s = paySettings || {};
     // 帳號欄位有填的才顯示；idx 記住它原本是第幾組，複製按鈕才不會複製錯帳戶
     const accounts = getPayAccounts(s)
@@ -2327,72 +2327,48 @@ function renderPayMethodHtml(amount) {
         .filter((a) => a.account);
     const linePayNote = String(s.linePayNote || '').trim();
 
-    if (accounts.length === 0 && !linePayNote) {
-        const msg = paySettingsError
-            ? '收款資訊暫時無法讀取，請稍後再試，或直接聯繫教練。'
-            : '教練尚未設定收款資訊，請直接聯繫教練。';
-        return `<div class="pay-card"><p class="no-data-hint">${msg}</p></div>`;
+    // 收款資訊讀不到、而且沒有任何內容可以顯示時，才顯示讀取失敗
+    if (paySettingsError && accounts.length === 0 && !linePayNote) {
+        return `<div class="pay-card"><p class="no-data-hint">收款資訊暫時無法讀取，請稍後再試，或直接聯繫教練。</p></div>`;
     }
 
-    let html = '';
+    // LINE Pay 一定顯示一行；教練有補充說明就顯示在下面
+    let html = `
+        <div class="pay-card pay-methods">
+            <h3 class="pay-section-title">付款方式</h3>
+            <div class="pay-method-row">
+                <div class="pay-method-name">📱 LINE Pay 好友轉帳</div>
+                ${linePayNote ? `<p class="pay-note">${payEscape(linePayNote)}</p>` : ''}
+            </div>`;
 
-    if (linePayNote) {
+    if (accounts.length > 0) {
         html += `
-            <div class="pay-card">
-                <h3 class="pay-section-title">📱 LINE Pay（好友轉帳）</h3>
-                <p class="pay-note">${payEscape(linePayNote)}</p>
-                <div class="pay-info-row"><span>金額</span><strong>$${amount.toLocaleString()}</strong></div>
-                <div class="pay-copy-row">
-                    <button type="button" onclick="copyPayInfo('amount', 0, this)">複製金額</button>
-                </div>
+            <div class="pay-method-row">
+                <div class="pay-method-name">🏦 銀行轉帳</div>
+                ${accounts.map((a) => {
+                    const name = [a.label, a.bankName].filter(Boolean).join('｜');
+                    const head = `${payEscape(name)}${a.bankCode ? `（代碼 ${payEscape(a.bankCode)}）` : ''}`;
+                    return `
+                <div class="pay-bank">
+                    ${head ? `<div class="pay-bank-head">${head}</div>` : ''}
+                    <div class="pay-bank-account">
+                        <span class="pay-bank-number">${payEscape(a.account)}</span>
+                        <button type="button" class="pay-copy-btn" onclick="copyPayAccount(${a.idx}, this)">複製帳號</button>
+                    </div>
+                    ${a.holder ? `<div class="pay-bank-holder">戶名 ${payEscape(a.holder)}</div>` : ''}
+                </div>`;
+                }).join('')}
             </div>`;
     }
 
-    accounts.forEach((a) => {
-        const title = a.label
-            ? `🏦 ${payEscape(a.label)}`
-            : (accounts.length > 1 ? `🏦 銀行轉帳（帳戶 ${a.idx + 1}）` : '🏦 銀行轉帳');
-
-        html += `
-            <div class="pay-card">
-                <h3 class="pay-section-title">${title}</h3>
-                ${a.bankName ? `<div class="pay-info-row"><span>銀行</span><strong>${payEscape(a.bankName)}</strong></div>` : ''}
-                ${a.bankCode ? `<div class="pay-info-row"><span>銀行代碼</span><strong>${payEscape(a.bankCode)}</strong></div>` : ''}
-                <div class="pay-info-row"><span>帳號</span><strong>${payEscape(a.account)}</strong></div>
-                ${a.holder ? `<div class="pay-info-row"><span>戶名</span><strong>${payEscape(a.holder)}</strong></div>` : ''}
-                <div class="pay-info-row"><span>金額</span><strong>$${amount.toLocaleString()}</strong></div>
-                <div class="pay-copy-row">
-                    ${a.bankCode ? `<button type="button" onclick="copyPayInfo('code', ${a.idx}, this)">複製銀行代碼</button>` : ''}
-                    <button type="button" onclick="copyPayInfo('account', ${a.idx}, this)">複製帳號</button>
-                    <button type="button" onclick="copyPayInfo('amount', ${a.idx}, this)">複製金額</button>
-                    <button type="button" onclick="copyPayInfo('all', ${a.idx}, this)">複製全部資訊</button>
-                </div>
-            </div>`;
-    });
-
-    return html;
+    return html + `
+        </div>`;
 }
 
-window.copyPayInfo = async function (kind, idx, btn) {
+// 複製某一個銀行帳戶的帳號（idx＝設定裡的第幾組帳戶）
+window.copyPayAccount = async function (idx, btn) {
     const a = getPayAccounts(paySettings)[idx] || {};
-    let text = '';
-    if (kind === 'code') {
-        text = a.bankCode || '';
-    } else if (kind === 'account') {
-        text = a.account || '';
-    } else if (kind === 'amount') {
-        text = String(payCurrentAmount);
-    } else {
-        const bankLine = `${a.bankName || ''}${a.bankCode ? `（代碼 ${a.bankCode}）` : ''}`;
-        text = [
-            `銀行：${bankLine}`,
-            `帳號：${a.account || ''}`,
-            `戶名：${a.holder || ''}`,
-            `金額：$${payCurrentAmount.toLocaleString()}`
-        ].join('\n');
-    }
-
-    const ok = await payCopyToClipboard(text);
+    const ok = await payCopyToClipboard(a.account || '');
     if (!ok) { alert('複製失敗，請手動長按文字複製'); return; }
     if (btn) {
         const original = btn.innerText;
@@ -2460,7 +2436,7 @@ function renderStudentPayPanel() {
     }
     if (payIncomeError || payReportError) {
         setPayBanner('none', '繳費狀態暫時無法讀取，請稍後再試。');
-        if (methodEl) methodEl.innerHTML = renderPayMethodHtml(amount);
+        if (methodEl) methodEl.innerHTML = renderPayMethodHtml();
         if (reportEl) reportEl.innerHTML = '';
         return;
     }
@@ -2471,7 +2447,7 @@ function renderStudentPayPanel() {
         return;
     }
 
-    if (methodEl) methodEl.innerHTML = renderPayMethodHtml(amount);
+    if (methodEl) methodEl.innerHTML = renderPayMethodHtml();
 
     if (report && report.status === 'reported') {
         setPayBanner('reported',
@@ -2492,11 +2468,10 @@ window.openReportModal = function () {
     document.getElementById('report-modal-summary').innerText =
         `${payYear} 年 ${payMonthIdx + 1} 月　應繳 $${payCurrentAmount.toLocaleString()}`;
 
-    // 預設的付款方式：教練只設了 LINE Pay 說明、沒設銀行帳號時，預設選 LINE Pay
+    // 預設的付款方式：教練沒設銀行帳號時，預設選 LINE Pay
     const hasBank = getPayAccounts(paySettings).some((a) => a.account);
-    const hasLinePay = !!String((paySettings && paySettings.linePayNote) || '').trim();
     const methodEl = document.getElementById('report-method');
-    if (methodEl) methodEl.value = (!hasBank && hasLinePay) ? 'linepay' : 'bank';
+    if (methodEl) methodEl.value = hasBank ? 'bank' : 'linepay';
 
     const input = document.getElementById('report-last5');
     input.value = '';
