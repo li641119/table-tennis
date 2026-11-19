@@ -269,7 +269,7 @@ async function enterStudentMode(user) {
     if (sidebar) sidebar.style.display = 'none';
     coachView.style.display = 'none';
     coachView.classList.add('hide');
-    studentView.style.display = 'block';
+    studentView.style.display = 'flex';   // 樣式裡 #student-view 本來就是 flex（直向排列），一頁一屏的高度排版需要它
 
     const nameEl = document.getElementById('student-name-display');
     if (nameEl) nameEl.innerText = studentName || '同學';
@@ -333,7 +333,7 @@ function showStudentPendingState(studentName, reason) {
     setText('student-notice-content', '核准後顯示');
     setText('student-slots-content', '核准後顯示');
     const statusEl = document.getElementById('student-payment-status');
-    if (statusEl) { statusEl.innerText = '—'; statusEl.style.color = '#90a4ae'; }
+    if (statusEl) { statusEl.innerText = '—'; statusEl.dataset.state = 'none'; statusEl.style.color = ''; }
     showStudentBanner(reason === 'other'
         ? '你的帳號目前核准的是另一個姓名。請聯絡教練重新核准。'
         : `⏳ 你的帳號（${studentName}）正在等待教練核准。核准後，課程和繳費資訊會自動出現，不用重新整理。`, 'pending');
@@ -1287,7 +1287,7 @@ function resetStudentView() {
     setText('pay-hours', '');
 
     const statusEl = document.getElementById('student-payment-status');
-    if (statusEl) { statusEl.innerText = '讀取中…'; statusEl.style.color = '#90a4ae'; }
+    if (statusEl) { statusEl.innerText = '讀取中…'; statusEl.dataset.state = 'none'; statusEl.style.color = ''; }
 
     ['student-month-grid', 'progress-chart', 'pay-breakdown', 'pay-method-area', 'pay-report-area', 'pay-status-banner']
         .forEach((id) => { const el = document.getElementById(id); if (el) el.innerHTML = ''; });
@@ -1510,7 +1510,7 @@ function startStudentLiveSync(studentName) {
         const nextEl = document.getElementById('student-next-class');
         if (nextEl) nextEl.innerText = '—';
         const statusEl = document.getElementById('student-payment-status');
-        if (statusEl) { statusEl.innerText = '—'; statusEl.style.color = '#90a4ae'; }
+        if (statusEl) { statusEl.innerText = '—'; statusEl.dataset.state = 'none'; statusEl.style.color = ''; }
         return;
     }
 
@@ -2259,15 +2259,16 @@ function updateHomePaymentCard() {
 
     const statusEl = document.getElementById('student-payment-status');
     if (!statusEl) return;
-    const set = (text, color) => { statusEl.innerText = text; statusEl.style.color = color; };
+    // 狀態標籤的顏色由樣式的 data-state 決定：unpaid 琥珀、paid 綠、reported 藍、none 灰
+    const set = (text, state) => { statusEl.innerText = text; statusEl.dataset.state = state; statusEl.style.color = ''; };
     const report = payStudentReports[key];
 
-    if (!coursesReady) { set('讀取中…', '#90a4ae'); return; }
-    if (payIncomeError || payReportError) { set('無法讀取', '#90a4ae'); return; }   // 讀不到就誠實說讀不到，不要顯示成「未繳費」
-    if (isStudentMonthPaid(year, monthIdx)) { set('已繳費', '#2e7d32'); return; }
-    if (report && report.status === 'reported') { set('已回報，待確認', '#e67e22'); return; }
-    if (coursesReady && amount <= 0) { set('本月無費用', '#7f8c8d'); return; }
-    set('未繳費', '#d32f2f');
+    if (!coursesReady) { set('讀取中…', 'none'); return; }
+    if (payIncomeError || payReportError) { set('無法讀取', 'none'); return; }   // 讀不到就誠實說讀不到，不要顯示成「未繳費」
+    if (isStudentMonthPaid(year, monthIdx)) { set('已繳費', 'paid'); return; }
+    if (report && report.status === 'reported') { set('已回報，待確認', 'reported'); return; }
+    if (coursesReady && amount <= 0) { set('本月無費用', 'none'); return; }
+    set('未繳費', 'unpaid');
 }
 
 // 繳費頁最早能切到的月份：學生端資料起算月（2026 年 10 月）。
