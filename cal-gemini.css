@@ -1646,18 +1646,22 @@ input[type="color"]::-moz-color-swatch {border: none;border-radius: 50%;}
 }
 
 /* 學生端：繳費頁 */
+/* 繳費頁：所有卡片統一樣式（白底、細邊框、無左右外距，才會跟其他頁面一樣寬） */
 .pay-card {
     background: #fff;
+    border: 1px solid #e8edf0;
     border-radius: 14px;
-    padding: 16px 20px;
-    margin: 14px;
+    padding: 16px;
+    margin: 0 0 12px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
 }
 
 .pay-month-switcher {
     display: flex;
     align-items: center;
+    justify-content: center;
     gap: 6px;
-    margin-bottom: 12px;
+    margin-bottom: 14px;
 }
 
 .pay-month-switcher button {
@@ -1665,18 +1669,19 @@ input[type="color"]::-moz-color-swatch {border: none;border-radius: 50%;}
     min-height: 40px;
     border: none;
     border-radius: 8px;
-    background: transparent;
+    background: #f0f2f5;
     color: #2c3e50;
     cursor: pointer;
 }
 
 .pay-month-switcher button:disabled { opacity: 0.35; cursor: not-allowed; }
-#pay-month-label { font-weight: 700; font-size: 16px; color: #2c3e50; }
+#pay-month-label { min-width: 120px; text-align: center; font-weight: 700; font-size: 16px; color: #2c3e50; }
 
-.pay-amount-block { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 12px; margin-bottom: 12px; }
-.pay-amount-label { font-size: 13px; color: #7f8c8d; }
-.pay-amount { font-size: 32px; font-weight: 800; color: #2c3e50; font-variant-numeric: tabular-nums; }
-.pay-hours { font-size: 13px; color: #7f8c8d; margin-left: auto;}
+/* 應繳金額：標籤一行、金額在左、時數在右下角 */
+.pay-amount-block { display: grid; grid-template-columns: 1fr auto; align-items: end; gap: 2px 12px; margin-bottom: 8px; }
+.pay-amount-label { grid-column: 1 / -1; font-size: 13px; color: #7f8c8d; }
+.pay-amount { font-size: 32px; font-weight: 800; line-height: 1.15; color: #2c3e50; font-variant-numeric: tabular-nums; }
+.pay-hours { padding-bottom: 4px; font-size: 13px; color: #7f8c8d; }
 
 .pay-banner { padding: 10px 14px; border-radius: 10px; font-size: 14px; font-weight: 600; }
 .pay-banner small { font-weight: 500; }
@@ -1699,28 +1704,34 @@ input[type="color"]::-moz-color-swatch {border: none;border-radius: 50%;}
 
 .pay-info-row strong { color: #2c3e50; text-align: right; word-break: break-all; }
 
-.pay-copy-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+/* 複製按鈕：兩顆一排；單數時最後一顆佔滿一排 */
+.pay-copy-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-top: 12px; }
+.pay-copy-row button:last-child:nth-child(odd) { grid-column: 1 / -1; }
 
 .pay-copy-row button {
-    flex: 1;
-    min-height: 44px;
-    padding: 8px 12px;
+    min-height: 40px;
+    padding: 6px 10px;
     border: 1px solid #cfd8dc;
     border-radius: 8px;
     background: #f8f9fa;
     color: #2c3e50;
+    font-size: 13px;
     font-weight: 600;
     cursor: pointer;
 }
 
+/* 回報按鈕：不再釘在畫面下方，也不要整排撐滿，放在卡片下方置中 */
 .pay-report-btn {
-    width: 100%;
-    min-height: 48px;
+    display: block;
+    width: min(100%, 300px);
+    min-height: 44px;
+    margin: 4px auto 0;
+    padding: 0 20px;
     border: none;
-    border-radius: 12px;
-    background: #2e7d32;
+    border-radius: 10px;
+    background: #2c3e50;
     color: #fff;
-    font-size: 15px;
+    font-size: 14px;
     font-weight: 700;
     cursor: pointer;
 }
@@ -1775,7 +1786,7 @@ input[type="color"]::-moz-color-swatch {border: none;border-radius: 50%;}
     cursor: pointer;
 }
 
-.report-btn-primary { background: #2e7d32; color: #fff; }
+.report-btn-primary { background: #2c3e50; color: #fff; }
 .report-btn:disabled { opacity: 0.6; cursor: not-allowed; }
 
 
@@ -2397,8 +2408,7 @@ html {
     .history-result-row { flex-wrap: wrap; }
 
     /* 前往繳費 */
-    .pay-card { padding: 14px 16px; margin-bottom: 12px; }
-    .pay-month-switcher { justify-content: center; }
+    .pay-card { padding: 14px; margin-bottom: 12px; }
 
     .pay-month-switcher button {
         min-width: var(--m-tap);
@@ -2406,18 +2416,8 @@ html {
         padding: 8px 0;
     }
 
-    #pay-month-label { min-width: 120px; text-align: center; }
     .pay-amount { font-size: clamp(26px, 9vw, 32px); }
     .pay-info-row { flex-wrap: wrap; gap: 4px 12px; }
-    .pay-copy-row button { flex: 1 1 100px; min-height: 46px; }
-
-    /* 回報按鈕固定在畫面下方，滑到哪裡都按得到 */
-    .pay-report-btn {
-        position: sticky;
-        bottom: calc(10px + env(safe-area-inset-bottom));
-        min-height: 52px;
-        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.18);
-    }
 
     .data-start-note { margin-top: 12px; }
 
@@ -2666,7 +2666,6 @@ html {
 
     .floating-controls button { padding: 10px 14px; }
     .cancel-report-btn { flex: 1 1 100%; }
-    .pay-copy-row button { flex: 1 1 calc(50% - 4px); }
     .auth-box { padding: 22px 16px; }
 }
 
@@ -2699,7 +2698,6 @@ html {
 
     .auth-box { margin: auto; }
     #login-container { overflow-y: auto; }
-    .pay-report-btn { position: static; }
 }
 
 
@@ -3285,7 +3283,6 @@ html {
 .payment-linepay-setting { margin-bottom: 16px; }
 .payment-linepay-setting label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; font-weight: 600; color: #546e7a; }
 .payment-settings-card textarea { width: 100%; box-sizing: border-box; padding: 10px 12px; border: 1px solid #ddd; border-radius: 8px; font-family: inherit; font-size: 14px; line-height: 1.6; resize: vertical; }
-.pay-card-linepay { border-left: 4px solid #06c755; }
 .pay-note { margin: 0 0 10px; font-size: 14px; line-height: 1.8; color: #37474f; white-space: pre-line; overflow-wrap: anywhere; }
 
 /* 回報視窗：付款方式 */

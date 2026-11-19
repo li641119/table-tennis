@@ -2272,25 +2272,27 @@ function updateHomePaymentCard() {
     set('未繳費', '#d32f2f');
 }
 
+// 繳費頁最早能切到的月份：學生端資料起算月（2026 年 10 月）。
+// 不管這位學生哪個月開始上課，都可以自己往前翻；最晚只到本月（教練的財務報表也只看到本月）。
 function payEarliestMonthNumber() {
     const now = new Date();
-    let min = payMonthNumber(now.getFullYear(), now.getMonth());
-    (window.courses || []).forEach((c) => {
-        if (!c || c.type !== 'work' || !c.date) return;
-        const y = parseInt(c.date.slice(0, 4), 10);
-        const m = parseInt(c.date.slice(5, 7), 10) - 1;
-        if (Number.isFinite(y) && Number.isFinite(m)) min = Math.min(min, payMonthNumber(y, m));
-    });
-
-    // 學生端資料起算點：不能切到更早的月份
+    const curNum = payMonthNumber(now.getFullYear(), now.getMonth());
     const startStr = window.STUDENT_DATA_START;
     if (startStr) {
         const startNum = payMonthNumber(
             parseInt(startStr.slice(0, 4), 10),
             parseInt(startStr.slice(5, 7), 10) - 1
         );
-        min = Math.max(min, startNum);
+        return Math.min(startNum, curNum);
     }
+    // 沒有設定起算點時，退回「第一堂課的月份」
+    let min = curNum;
+    (window.courses || []).forEach((c) => {
+        if (!c || c.type !== 'work' || !c.date) return;
+        const y = parseInt(c.date.slice(0, 4), 10);
+        const m = parseInt(c.date.slice(5, 7), 10) - 1;
+        if (Number.isFinite(y) && Number.isFinite(m)) min = Math.min(min, payMonthNumber(y, m));
+    });
     return min;
 }
 
@@ -2336,8 +2338,8 @@ function renderPayMethodHtml(amount) {
 
     if (linePayNote) {
         html += `
-            <div class="pay-card pay-card-linepay">
-                <h3 class="pay-section-title">💚 LINE Pay（好友轉帳）</h3>
+            <div class="pay-card">
+                <h3 class="pay-section-title">📱 LINE Pay（好友轉帳）</h3>
                 <p class="pay-note">${payEscape(linePayNote)}</p>
                 <div class="pay-info-row"><span>金額</span><strong>$${amount.toLocaleString()}</strong></div>
                 <div class="pay-copy-row">
