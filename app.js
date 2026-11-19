@@ -4,7 +4,7 @@
 // Firebase imports
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-app.js";
 import { 
-    getFirestore, initializeFirestore, persistentLocalCache, persistentMultipleTabManager,
+    getFirestore, initializeFirestore, memoryLocalCache,
     collection, query, where, getDocs, onSnapshot, setDoc, doc, deleteDoc, getDoc, 
 } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
 import { 
@@ -26,14 +26,14 @@ const firebaseConfig = {
 
 // db, auth
 const app = initializeApp(firebaseConfig);
-// 開啟本機快取：球館訊號不好時，仍看得到上次載入的資料（無法啟用時自動退回一般模式）
+// 每個分頁各自獨立（記憶體快取），不跨分頁共用。
+// 不要改回多分頁共用的 IndexedDB 快取：同一個瀏覽器同時登入教練與學生帳號（各開一個分頁）時，
+// 兩個分頁的身分會互相干擾，教練端所有讀取都會被拒絕（permission-denied）。
 const db = (() => {
     try {
-        return initializeFirestore(app, {
-            localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() })
-        });
+        return initializeFirestore(app, { localCache: memoryLocalCache() });
     } catch (err) {
-        console.warn('離線快取無法啟用，改用一般模式:', err);
+        console.warn('Firestore 初始化設定失敗，改用預設值:', err);
         return getFirestore(app);
     }
 })();
@@ -424,6 +424,7 @@ onAuthStateChanged(auth, async (user) => {
         stopStudentTimeRefresh();
         stopStudentApprovalWatch();
         stopCoachApprovalWatcher();
+        showCoachBanner('');
         resetStudentView();     // 清掉畫面，下一位登入的人不會看到前一位的資料
     }
 });
@@ -1173,6 +1174,21 @@ window.removeEventFromCloud = async (eventId) => {
 };
 
 // 跟 Firestore 同步課表資料
+// 教練端畫面最上方的提示條（讀取失敗時顯示）；傳空字串就移除
+function showCoachBanner(text) {
+    let el = document.getElementById('coach-banner');
+    if (!text) { if (el) el.remove(); return; }
+    if (!el) {
+        const host = document.getElementById('coach-view');
+        if (!host) return;
+        el = document.createElement('div');
+        el.id = 'coach-banner';
+        el.className = 'coach-banner';
+        host.insertBefore(el, host.firstChild);
+    }
+    el.innerText = text;
+}
+
 function startLiveSync() {
     console.log("🔒 啟動全域資料同步 (教練視角)...");
     if (unsubscribe) unsubscribe(); 
@@ -1193,6 +1209,7 @@ function startLiveSync() {
 
 
         console.log("📥 教練成功同步課表數量:", myEvents.length);
+        showCoachBanner('');   // 讀取成功，清掉之前的錯誤提示
 
         // 強制確保全域與本地變數同時拿到最新的真相來源
         window.courses = myEvents;
@@ -1219,6 +1236,11 @@ function startLiveSync() {
         } else if (window.renderAll) {
             window.renderAll();
         }
+    }, (err) => {
+        console.error('讀取課表失敗:', err);
+        showCoachBanner(err && err.code === 'permission-denied'
+            ? '資料讀取被拒絕。請先關掉其他分頁（尤其是學生帳號的分頁）再重新整理；如果還是一樣，請確認 Firestore 規則裡的教練 Email。'
+            : '課表讀取失敗，請檢查網路後重新整理頁面。');
     });
 }
 

@@ -3299,3 +3299,6 @@ html {
 /* 學生首頁：等待核准的提示條 */
 .student-banner[data-kind="pending"] { background: #e8f1fb; color: #1565c0; }
 
+/* 教練端：資料讀取被拒絕時的提示條 */
+.coach-banner { margin: 10px 14px 0; padding: 10px 14px; border-radius: 10px; background: #ffebee; color: #c62828; font-size: 13.5px; font-weight: 600; line-height: 1.6; }
+
