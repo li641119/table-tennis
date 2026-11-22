@@ -1,0 +1,10 @@
+# 金鑰與密碼：絕對不要放進專案（專案是公開的）。它們只存在 GitHub 的 Secrets 裡。
+*serviceAccount*.json
+*service-account*.json
+*firebase-adminsdk*.json
+*.pem
+.env
+.env.*
+
+# 套件
+node_modules/

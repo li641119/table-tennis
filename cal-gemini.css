@@ -3272,11 +3272,11 @@ html {
    - 首頁：問候 → 本月摘要（統計＋繳費狀態）→ 下次上課／停課公告／可預約時段
    - 手機版（700px 以下）每個分頁剛好一個畫面，不用下拉；太長的清單在自己的框裡捲動
    - 「資料自…起算」固定在畫面右下角
-   想換問候的字體：只要改下面兩個 --student-display-* 變數
+   首頁的字體：統一用跟其他分頁一樣的黑體；想換字體只要改下面兩個 --student-display-* 變數
    ============================================================ */
 #student-view {
-    --student-display-font: 'Noto Serif TC', 'Songti TC', 'PMingLiU', serif;
-    --student-display-latin: 'Playfair Display', 'Noto Serif TC', 'Songti TC', serif;
+    --student-display-font: "Microsoft JhengHei", sans-serif;
+    --student-display-latin: "Microsoft JhengHei", sans-serif;
 }
 
 /* 每個分頁底部留一點空間，才不會被右下角的「資料自…起算」蓋住 */
@@ -3320,7 +3320,7 @@ html {
     background: transparent;
     font-family: var(--student-display-latin);
     font-size: 17px;
-    font-style: italic;
+    font-style: normal;
     font-weight: 500;
     line-height: 1.3;
     letter-spacing: .02em;

@@ -1,0 +1,51 @@
+name: 上課提醒（前一天 21:00 寄 Email）
+
+on:
+  schedule:
+    - cron: '0 13 * * *'   # 13:00 UTC＝台北時間 21:00（GitHub 排程可能晚幾分鐘到一小時才執行）
+  workflow_dispatch:       # 也可以到 Actions 分頁手動執行（預設只試跑，不會寄給學生）
+    inputs:
+      mode:
+        description: '執行模式'
+        type: choice
+        default: dry-run
+        options:
+          - dry-run   # 試跑：不寄給學生，只把「會寄給誰」的報告寄給你自己
+          - test      # 測試寄送：所有提醒信都寄給你自己
+          - send      # 正式寄給學生
+      date:
+        description: '要提醒哪一天的課（格式 2026-11-28；留空＝明天）'
+        required: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: lesson-reminder
+  cancel-in-progress: false
+
+jobs:
+  remind:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: 安裝套件
+        working-directory: scripts
+        run: npm install --no-audit --no-fund
+
+      - name: 寄送上課提醒
+        working-directory: scripts
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          GMAIL_USER: ${{ secrets.GMAIL_USER }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          # 排程自動執行時一律正式寄出；手動執行時用你選的模式（預設 dry-run）
+          MODE: ${{ github.event_name == 'schedule' && 'send' || inputs.mode }}
+          TARGET_DATE: ${{ inputs.date }}
+        run: node send-reminders.js

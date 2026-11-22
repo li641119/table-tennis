@@ -1,0 +1,13 @@
+{
+  "name": "lesson-reminder",
+  "private": true,
+  "version": "1.0.0",
+  "description": "每晚寄出隔天的上課提醒 Email（由 GitHub Actions 執行）",
+  "scripts": {
+    "test": "node send-reminders.test.js"
+  },
+  "dependencies": {
+    "firebase-admin": "^13.0.0",
+    "nodemailer": "^6.9.16"
+  }
+}
