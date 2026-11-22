@@ -3304,9 +3304,9 @@ html {
     flex-direction: column;
     gap: 0;
     width: 100%;
-    max-width: 640px;
+    max-width: 720px;
     margin: 0 auto;
-    padding: 14px 20px 0;
+    padding: 24px 22px 0;
     box-sizing: border-box;
 }
 
@@ -3314,7 +3314,7 @@ html {
 #student-view #panel-student-home .panel-subtitle {
     display: flex;
     flex-direction: column;
-    margin: 0 0 12px;
+    margin: 0 0 20px;
     padding: 0;
     border: 0;
     background: transparent;
@@ -3346,10 +3346,10 @@ html {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     grid-column: auto;
     gap: 0;
-    margin: 0 0 6px;
-    padding: 14px 16px 12px;
+    margin: 0 0 14px;
+    padding: 18px 20px 16px;
     border: 0;
-    border-radius: 14px;
+    border-radius: 16px;
     background: var(--student-green-soft);
     box-shadow: none;
 }
@@ -3359,7 +3359,7 @@ html {
 #student-view #panel-student-home .student-stat-card {
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    gap: 4px;
     min-width: 0;
     margin: 0;
     padding: 0 12px 0 0;
@@ -3371,7 +3371,7 @@ html {
 }
 
 #student-view #panel-student-home .student-stat-card + .student-stat-card {
-    padding: 0 0 0 16px;
+    padding: 0 0 0 18px;
     border-left: 1px solid rgba(49, 89, 77, 0.22);
 }
 
@@ -3401,8 +3401,8 @@ html {
     align-items: center;
     justify-content: space-between;
     gap: 12px;
-    margin: 12px 0 0;
-    padding: 10px 0 0;
+    margin: 16px 0 0;
+    padding: 14px 0 0;
     border: 0;
     border-top: 1px solid rgba(49, 89, 77, 0.2);
     border-radius: 0;
@@ -3438,11 +3438,11 @@ html {
     display: flex;
     flex-direction: column;
     align-items: stretch;
-    gap: 4px;
+    gap: 6px;
     grid-column: auto;
     min-width: 0;
     margin: 0;
-    padding: 12px 0;
+    padding: 16px 0;
     border: 0;
     border-top: 1px solid var(--student-line);
     border-radius: 0;
@@ -3456,7 +3456,7 @@ html {
 #student-view #panel-student-home .student-next-card > span:first-child,
 #student-view #panel-student-home .student-notice-card > span:first-child,
 #student-view #panel-student-home .student-slots-card > span:first-child {
-    font-size: 12px;
+    font-size: 13px;
     font-weight: 500;
     letter-spacing: .02em;
     color: var(--student-muted);
@@ -3465,7 +3465,7 @@ html {
 #student-view #panel-student-home #student-next-class {
     display: block;
     margin: 0;
-    font-size: 17px;
+    font-size: 18px;
     font-weight: 600;
     line-height: 1.4;
     color: var(--student-ink);
@@ -3474,10 +3474,10 @@ html {
 
 #student-view #panel-student-home #student-notice-content {
     display: block;
-    max-height: 6em;
+    max-height: 7.5em;
     margin: 0;
     overflow-y: auto;
-    font-size: 15px;
+    font-size: 16px;
     font-weight: 600;
     line-height: 1.5;
     white-space: pre-line;
@@ -3488,20 +3488,20 @@ html {
 #student-view #panel-student-home #student-slots-content {
     display: flex;
     flex-wrap: wrap;
-    gap: 6px;
-    max-height: 84px;
-    margin: 2px 0 0;
+    gap: 8px;
+    max-height: 104px;
+    margin: 4px 0 0;
     overflow-y: auto;
 }
 
 #student-view #panel-student-home #student-slots-content .slot-chip {
     margin: 0;
-    padding: 6px 10px;
+    padding: 7px 12px;
     border: 1px solid var(--student-line);
     border-radius: 8px;
     background: var(--student-surface);
     box-shadow: none;
-    font-size: 12px;
+    font-size: 13px;
     color: var(--student-ink);
 }
 
@@ -3549,3 +3549,20 @@ html {
     #student-view #panel-student-home .student-slots-card { padding: 8px 0; }
     #student-view #panel-student-calendar .month-cell { height: 36px; }
 }
+
+/* 寬螢幕（900px 以上）：首頁放寬，下次上課與停課公告左右並排 */
+@media (min-width: 900px) {
+    #student-view #panel-student-home .panel-inner {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        column-gap: 40px;
+        align-content: start;
+        max-width: 1000px;
+        padding: 36px 40px 0;
+    }
+
+    #student-view #panel-student-home .panel-subtitle,
+    #student-view #panel-student-home .student-header,
+    #student-view #panel-student-home .student-slots-card { grid-column: 1 / -1; }
+}
+
