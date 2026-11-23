@@ -12,7 +12,7 @@
     <link rel="icon" href="data:,">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800&family=Inter:wght@400;500;600&family=Noto+Serif+TC:wght@700&family=Playfair+Display:ital,wght@1,500&display=swap" rel="stylesheet">
 </head>
 
 <body>
@@ -216,9 +216,9 @@
                     </div>
                     <!--上下周切換按鈕-->
                     <div class="floating-controls">
-                        <button onclick="changeWeek(-1)" title="上一週"> ⬅️</button>
+                        <button type="button" class="nav-arrow" onclick="changeWeek(-1)" title="上一週" aria-label="上一週">◄</button>
                         <button onclick="goToday()" class="today-btn"> 本週</button>
-                        <button onclick="changeWeek(1)" title="下一週"> ➡️</button>
+                        <button type="button" class="nav-arrow" onclick="changeWeek(1)" title="下一週" aria-label="下一週">►</button>
                     </div>
 
                     <!--calendar-->
@@ -333,10 +333,10 @@
             <!--財務報表，尚未完成輸入年月份查詢的功能-->
             <div class="coach-panel" id="panel-income" data-panel-id="panel-income">
                 <div class="panel-inner">
-                    <div class="income-month-switcher">
-                        <button type="button" id="income-month-prev" onclick="changeIncomeMonth(-1)">◀</button>
-                        <span id="income-month-label"></span>
-                        <button type="button" id="income-month-next" onclick="changeIncomeMonth(1)">▶</button>
+                    <div class="income-month-switcher nav-switcher">
+                        <button type="button" class="nav-arrow" id="income-month-prev" onclick="changeIncomeMonth(-1)" aria-label="上個月">◄</button>
+                        <span id="income-month-label" class="nav-label"></span>
+                        <button type="button" class="nav-arrow" id="income-month-next" onclick="changeIncomeMonth(1)" aria-label="下個月">►</button>
                     </div>
                     <div class="income-summary-row">
                         <div class= "income-summary-card">
@@ -537,10 +537,10 @@
                 
                 <!-- 左側：月曆 -->
                 <div class="calendar-col">
-                    <div class="month-calendar-header">
-                        <button type="button" onclick="changeStudentMonth(-1)">◀</button>
-                        <h3 id="student-month-label">讀取中...</h3>
-                        <button type="button" onclick="changeStudentMonth(1)">▶</button>
+                    <div class="month-calendar-header nav-switcher">
+                        <button type="button" class="nav-arrow" onclick="changeStudentMonth(-1)" aria-label="上個月">◄</button>
+                        <h3 id="student-month-label" class="nav-label">讀取中...</h3>
+                        <button type="button" class="nav-arrow" onclick="changeStudentMonth(1)" aria-label="下個月">►</button>
                     </div>
                     
                     <div class="month-calendar-grid" id="student-month-grid"></div>
@@ -560,10 +560,10 @@
             <div class="panel-inner">
                 <h2 class="panel-subtitle">📈 學習歷程</h2>
                 <div class="progress-chart-card">
-                    <div class="year-switcher">
-                        <button type="button" id="chart-year-prev" onclick="changeChartYear(-1)">◀</button>
-                        <span id="chart-year-label"></span>
-                        <button type="button" id="chart-year-next" onclick="changeChartYear(1)">▶</button>
+                    <div class="year-switcher nav-switcher">
+                        <button type="button" class="nav-arrow" id="chart-year-prev" onclick="changeChartYear(-1)" aria-label="上一年">◄</button>
+                        <span id="chart-year-label" class="nav-label"></span>
+                        <button type="button" class="nav-arrow" id="chart-year-next" onclick="changeChartYear(1)" aria-label="下一年">►</button>
                     </div>
                     <span id="chart-year-total" class="chart-year-total"></span>
                     <div id="progress-chart"></div>
@@ -585,10 +585,10 @@
         <div class="student-panel" id="panel-student-pay" data-panel-id="panel-student-pay">
             <div class="panel-inner">
                 <div class="pay-card">
-                    <div class="pay-month-switcher">
-                        <button type="button" id="pay-month-prev" onclick="changePayMonth(-1)">◀</button>
-                        <span id="pay-month-label"></span>
-                        <button type="button" id="pay-month-next" onclick="changePayMonth(1)">▶</button>
+                    <div class="pay-month-switcher nav-switcher">
+                        <button type="button" class="nav-arrow" id="pay-month-prev" onclick="changePayMonth(-1)" aria-label="上個月">◄</button>
+                        <span id="pay-month-label" class="nav-label"></span>
+                        <button type="button" class="nav-arrow" id="pay-month-next" onclick="changePayMonth(1)" aria-label="下個月">►</button>
                     </div>
                     <div class="pay-amount-block">
                         <span class="pay-amount-label">應繳金額</span>

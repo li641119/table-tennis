@@ -2469,7 +2469,7 @@ function renderStudentPayPanel() {
     payMonthIdx = curNum % 12;
 
     const labelEl = document.getElementById('pay-month-label');
-    if (labelEl) labelEl.innerText = `${payYear} 年 ${payMonthIdx + 1} 月`;
+    if (labelEl) labelEl.innerText = `${payYear}年 ${payMonthIdx + 1}月`;
     const prevBtn = document.getElementById('pay-month-prev');
     const nextBtn = document.getElementById('pay-month-next');
     if (prevBtn) prevBtn.disabled = curNum <= minNum;
@@ -2541,7 +2541,7 @@ function renderStudentPayPanel() {
 window.openReportModal = function () {
     if (payCurrentAmount <= 0) return;
     document.getElementById('report-modal-summary').innerText =
-        `${payYear} 年 ${payMonthIdx + 1} 月　應繳 $${payCurrentAmount.toLocaleString()}`;
+        `${payYear}年 ${payMonthIdx + 1}月　應繳 $${payCurrentAmount.toLocaleString()}`;
 
     // 預設的付款方式：教練沒設銀行帳號時，預設選 LINE Pay
     const hasBank = getPayAccounts(paySettings).some((a) => a.account);

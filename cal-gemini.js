@@ -716,7 +716,7 @@ export function renderIncomePanel() {
     const month = incomePanelMonth;
 
     const labelEl = document.getElementById('income-month-label');
-    if (labelEl) labelEl.innerText = `${year} 年 ${month + 1} 月`;
+    if (labelEl) labelEl.innerText = `${year}年 ${month + 1}月`;
     const prevBtn = document.getElementById('income-month-prev');
     const nextBtn = document.getElementById('income-month-next');
     if (prevBtn) prevBtn.disabled = cur <= minNum;
@@ -1485,7 +1485,7 @@ function renderProgressChart() {
     if (chartYear < earliest) chartYear = earliest;
 
     const labelEl = document.getElementById('chart-year-label');
-    if (labelEl) labelEl.innerText = `${chartYear} 年`;
+    if (labelEl) labelEl.innerText = `${chartYear}年`;
     const prevBtn = document.getElementById('chart-year-prev');
     const nextBtn = document.getElementById('chart-year-next');
     if (prevBtn) prevBtn.disabled = chartYear <= earliest;

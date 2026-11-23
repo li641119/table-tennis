@@ -468,14 +468,6 @@ input[type="color"]::-moz-color-swatch {border: none;border-radius: 50%;}
     box-shadow: 0 4px 12px rgba(0,0,0,0.08);
  }
 
-.month-calendar-header {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    margin-bottom: 20px;
-    gap: 20px;
-}
-
 .student-calendar-layout {
     display: grid;
     grid-template-columns: minmax(0, 1fr) 300px;
@@ -488,15 +480,6 @@ input[type="color"]::-moz-color-swatch {border: none;border-radius: 50%;}
 .calendar-col{
     display: flex;
     flex-direction: column;
-}
-
-.month-calendar-header button {
-    border: none;
-    background: transparent;
-    border-radius: none;
-    padding: 8px 14px;
-    cursor: pointer;
-    box-shadow: none;
 }
 
 .calendar-title {
@@ -1513,37 +1496,6 @@ input[type="color"]::-moz-color-swatch {border: none;border-radius: 50%;}
     text-align: center;
 }
 
-.year-switcher {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    margin: 4px 12px 0;
-    gap: 20px;
-}
-
-.year-switcher button {
-    min-width: 40px;
-    min-height: 40px;
-    border: none;
-    border-radius: 8px;
-    background: transparent;
-    color: #2c3e50;
-    font-size: 14px;
-    cursor: pointer;
-    align-items: center;
-}
-
-
-.year-switcher button:disabled {
-    opacity: 0.35;
-    cursor: not-allowed;
-}
-
-#chart-year-label {
-    font-weight: 700;
-    font-size: 16px;
-    color: #2c3e50;
-}
 
 .chart-year-total {
     font-size: 13px;
@@ -1655,27 +1607,6 @@ input[type="color"]::-moz-color-swatch {border: none;border-radius: 50%;}
     margin: 0 0 12px;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
 }
-
-.pay-month-switcher {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    margin-bottom: 14px;
-}
-
-.pay-month-switcher button {
-    min-width: 40px;
-    min-height: 40px;
-    border: none;
-    border-radius: 8px;
-    background: #f0f2f5;
-    color: #2c3e50;
-    cursor: pointer;
-}
-
-.pay-month-switcher button:disabled { opacity: 0.35; cursor: not-allowed; }
-#pay-month-label { min-width: 120px; text-align: center; font-weight: 700; font-size: 16px; color: #2c3e50; }
 
 /* 應繳金額：「應繳金額 $12,100　　共 17 小時」同一行 */
 .pay-amount-block { display: flex; align-items: baseline; gap: 10px; margin-bottom: 8px; }
@@ -1861,27 +1792,6 @@ input[type="color"]::-moz-color-swatch {border: none;border-radius: 50%;}
 .trend-hint { margin: 8px 0 0; font-size: 12px; color: #9aa5ab; text-align: center; }
 
 /* 財務報表：月份切換列 */
-.income-month-switcher {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin-bottom: 16px;
-}
-
-.income-month-switcher button {
-    min-width: 40px;
-    min-height: 40px;
-    border: none;
-    border-radius: 8px;
-    background: #f0f2f5;
-    color: #2c3e50;
-    cursor: pointer;
-}
-
-.income-month-switcher button:disabled { opacity: 0.35; cursor: not-allowed; }
-
-#income-month-label { font-weight: 700; font-size: 18px; color: #2c3e50; }
-
 /* 學生收款資料列 */
 .db-row.income-student-row {
     display: flex;
@@ -2276,15 +2186,6 @@ html {
     .profile-delete-btn { width: 100%; min-height: 46px; }
 
     /* ---------- 教練：財務報表 ---------- */
-    .income-month-switcher { justify-content: center; margin-bottom: 14px; }
-
-    .income-month-switcher button {
-        min-width: var(--m-tap);
-        min-height: var(--m-tap);
-    }
-
-    #income-month-label { min-width: 120px; text-align: center; font-size: 17px; }
-
     .income-summary-row {
         display: grid;
         grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -2347,14 +2248,6 @@ html {
         margin: 12px 0;
     }
 
-    .month-calendar-header { gap: 8px; }
-
-    .month-calendar-header button {
-        min-width: var(--m-tap);
-        min-height: var(--m-tap);
-    }
-
-    .month-calendar-header h3 { margin: 0; font-size: 16px; }
     .month-calendar-grid { gap: 4px; width: 100%; min-width: 0; }
     .month-weekday { font-size: 12px; }
     /* 基本樣式設了 height: 80px，手機版要用 height 才蓋得掉；6 列月曆約 280px，不會塞滿畫面 */
@@ -2370,24 +2263,11 @@ html {
 
     /* 上課紀錄、學習歷程 */
     .progress-chart-card { padding: 5px 12px; margin-bottom: 10px; }
-    .year-switcher { flex-wrap: wrap; gap: 8px; }
-
-    .year-switcher button {
-        min-width: var(--m-tap);
-        min-height: var(--m-tap);
-    }
-
     .chart-year-total { flex: 1 1 100%; }
     .history-result-row { flex-wrap: wrap; }
 
     /* 前往繳費 */
     .pay-card { padding: 14px; margin-bottom: 12px; }
-
-    .pay-month-switcher button {
-        min-width: var(--m-tap);
-        min-height: var(--m-tap);
-        padding: 8px 0;
-    }
 
     .pay-amount { font-size: clamp(24px, 7.5vw, 30px); }
 
@@ -3272,11 +3152,14 @@ html {
    - 首頁：問候 → 本月摘要（統計＋繳費狀態）→ 下次上課／停課公告／可預約時段
    - 手機版（700px 以下）每個分頁剛好一個畫面，不用下拉；太長的清單在自己的框裡捲動
    - 「資料自…起算」固定在畫面右下角
-   首頁的字體：統一用跟其他分頁一樣的黑體；想換字體只要改下面兩個 --student-display-* 變數
+   首頁的字體：除了最上面的問候，其餘都用跟其他分頁一樣的黑體；問候的字體改下面兩個 --student-greeting-* 變數
    ============================================================ */
 #student-view {
     --student-display-font: "Microsoft JhengHei", sans-serif;
     --student-display-latin: "Microsoft JhengHei", sans-serif;
+    /* 只有首頁最上面的「Welcome back! ＋ 姓名」用這組特別的字體 */
+    --student-greeting-latin: 'Playfair Display', 'Noto Serif TC', 'Songti TC', serif;
+    --student-greeting-font: 'Noto Serif TC', 'Songti TC', 'PMingLiU', serif;
 }
 
 /* 每個分頁底部留一點空間，才不會被右下角的「資料自…起算」蓋住 */
@@ -3318,9 +3201,9 @@ html {
     padding: 0;
     border: 0;
     background: transparent;
-    font-family: var(--student-display-latin);
+    font-family: var(--student-greeting-latin);
     font-size: 17px;
-    font-style: normal;
+    font-style: italic;
     font-weight: 500;
     line-height: 1.3;
     letter-spacing: .02em;
@@ -3330,7 +3213,7 @@ html {
 #student-view #panel-student-home #student-name-display {
     display: block;
     margin: 2px 0 0;
-    font-family: var(--student-display-font);
+    font-family: var(--student-greeting-font);
     font-size: clamp(26px, 8vw, 32px);
     font-style: normal;
     font-weight: 700;
@@ -3489,19 +3372,23 @@ html {
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
-    max-height: 104px;
+    max-height: 112px;
     margin: 4px 0 0;
     overflow-y: auto;
 }
 
 #student-view #panel-student-home #student-slots-content .slot-chip {
     margin: 0;
-    padding: 7px 12px;
+    padding: 6px 14px;
     border: 1px solid var(--student-line);
-    border-radius: 8px;
+    border-radius: 10px;
     background: var(--student-surface);
     box-shadow: none;
-    font-size: 13px;
+    font-family: inherit;
+    font-size: 18px;
+    font-weight: 600;
+    line-height: 1.4;
+    letter-spacing: normal;
     color: var(--student-ink);
 }
 
@@ -3530,11 +3417,6 @@ html {
     #student-view #panel-student-history #progress-chart svg { display: block; width: 100%; height: auto; max-height: 150px; }
     #student-view #panel-student-history .history-result { flex: 1 1 0; min-height: 90px; margin: 6px 0 0; overflow-y: auto; }
 
-    /* 前往繳費：卡片內距縮小，金額與回報按鈕、付款方式一個畫面看完 */
-    #student-view #panel-student-pay .panel-inner { margin: 0 auto; padding: 10px 16px 0; }
-    #student-view #panel-student-pay .pay-card { margin-bottom: 10px; padding: 12px 14px; }
-    #student-view #panel-student-pay .pay-month-switcher { margin-bottom: 6px; }
-    #student-view #panel-student-pay .pay-report-btn { margin-top: 10px; }
 }
 
 /* 手機又特別矮（約 iPhone SE 以下）：再壓縮一點 */
@@ -3568,4 +3450,245 @@ html {
 
 /* 個人頁：收不到上課提醒時用橘色提醒 */
 #profile-reminder.is-off { color: #e65100; font-weight: 600; }
+
+/* ============================================================
+   【統一的左右切換】月份、年份、週的切換全部長一樣：◄ 標題 ►（沒有框框）
+   用法：容器加 nav-switcher、箭頭按鈕加 nav-arrow、標題加 nav-label
+   ============================================================ */
+.nav-switcher {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    margin: 0 0 12px;
+}
+
+.nav-switcher .nav-arrow {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 44px;
+    min-height: 44px;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+    color: var(--student-ink, #2c3e50);
+    font-size: 15px;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.nav-switcher .nav-arrow:active { opacity: 0.55; }
+.nav-switcher .nav-arrow:disabled { opacity: 0.3; cursor: not-allowed; }
+
+.nav-switcher .nav-label {
+    min-width: 120px;
+    margin: 0;
+    text-align: center;
+    font-size: 17px;
+    font-weight: 600;
+    color: var(--student-ink, #2c3e50);
+}
+
+.year-switcher.nav-switcher { margin-bottom: 4px; }
+
+/* 教練的週切換（浮在課表右下角）：同樣是 ◄ 本週 ►，三個之間沒有各自的框，只有一個淡淡的底 */
+.floating-controls {
+    gap: 2px;
+    align-items: center;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.92);
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.12);
+}
+
+.floating-controls .nav-arrow,
+.floating-controls .today-btn {
+    min-width: 44px;
+    min-height: 44px;
+    padding: 0 10px;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+    transform: none;
+    color: #2c3e50;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.floating-controls .nav-arrow:hover,
+.floating-controls .today-btn:hover {
+    background: transparent;
+    box-shadow: none;
+    transform: none;
+    opacity: 0.6;
+}
+
+/* ============================================================
+   【學生繳費頁：簡潔版】
+   上方「應繳金額」是整頁唯一有底色的區塊；付款方式不再用白色框框，只用細線分開
+   ============================================================ */
+#student-view #panel-student-pay .panel-inner {
+    width: 100%;
+    max-width: 640px;
+    margin: 0 auto;
+    padding: 18px 22px 0;
+    box-sizing: border-box;
+}
+
+#student-view #panel-student-pay .panel-inner > .pay-card {
+    margin: 0;
+    padding: 6px 20px 20px;
+    border: 0;
+    border-radius: 16px;
+    background: var(--student-green-soft);
+    box-shadow: none;
+}
+
+#student-view #panel-student-pay .pay-month-switcher { margin: 0 0 6px; }
+
+/* 「應繳金額」標題一行，金額與「共 N 小時」在同一行 */
+#student-view #panel-student-pay .pay-amount-block {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: end;
+    gap: 2px 12px;
+    margin: 0;
+}
+
+#student-view #panel-student-pay .pay-amount-label {
+    grid-column: 1 / -1;
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: .04em;
+    color: var(--student-muted);
+}
+
+#student-view #panel-student-pay .pay-amount {
+    font-size: clamp(32px, 10vw, 40px);
+    font-weight: 700;
+    line-height: 1.1;
+    letter-spacing: -.01em;
+    color: var(--student-ink);
+}
+
+#student-view #panel-student-pay .pay-hours {
+    padding-bottom: 6px;
+    font-size: 14px;
+    color: var(--student-muted);
+}
+
+#student-view #panel-student-pay .pay-breakdown {
+    margin: 10px 0 0;
+    font-size: 13px;
+    line-height: 1.8;
+    color: var(--student-muted);
+}
+
+#student-view #panel-student-pay .pay-breakdown-line { display: block; }
+
+/* 繳費狀態：不用色塊，改成一個小圓點加文字 */
+#student-view #panel-student-pay .pay-banner {
+    margin: 12px 0 0;
+    padding: 0;
+    border-radius: 0;
+    background: none;
+    font-size: 14px;
+    font-weight: 700;
+    line-height: 1.6;
+}
+
+#student-view #panel-student-pay .pay-banner::before {
+    content: '';
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    margin-right: 8px;
+    border-radius: 50%;
+    background: currentColor;
+    vertical-align: middle;
+}
+
+#student-view #panel-student-pay .pay-banner small { display: block; margin-left: 16px; font-weight: 500; color: var(--student-muted); }
+#student-view #panel-student-pay .pay-banner-unpaid   { background: none; color: #9a5a1c; }
+#student-view #panel-student-pay .pay-banner-reported { background: none; color: #2f5f94; }
+#student-view #panel-student-pay .pay-banner-paid     { background: none; color: #2b6a4f; }
+#student-view #panel-student-pay .pay-banner-none     { background: none; color: var(--student-muted); }
+
+#student-view #panel-student-pay .pay-report-btn {
+    width: 100%;
+    min-height: 50px;
+    margin: 16px 0 0;
+    border-radius: 12px;
+    font-size: 15px;
+}
+
+/* 付款方式：沒有框，標題與細線分隔 */
+#student-view #panel-student-pay #pay-method-area .pay-card {
+    margin: 24px 0 0;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+}
+
+#student-view #panel-student-pay #pay-method-area .pay-section-title {
+    margin: 0 0 4px;
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: .04em;
+    color: var(--student-muted);
+}
+
+#student-view #panel-student-pay #pay-method-area .pay-method-row,
+#student-view #panel-student-pay #pay-method-area .pay-method-row:first-of-type {
+    padding: 14px 0;
+    border-top: 1px solid var(--student-line);
+}
+
+#student-view #panel-student-pay #pay-method-area .pay-method-name { font-size: 16px; font-weight: 600; color: var(--student-ink); }
+#student-view #panel-student-pay #pay-method-area .pay-note { margin: 6px 0 0; font-size: 14px; line-height: 1.7; color: var(--student-muted); }
+
+/* 銀行：第一行「銀行（代碼）　戶名」，第二行「帳號　［複製帳號］」 */
+#student-view #panel-student-pay #pay-method-area .pay-bank {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas: "head holder" "acct acct";
+    align-items: baseline;
+    gap: 4px 12px;
+    margin-top: 12px;
+}
+
+#student-view #panel-student-pay #pay-method-area .pay-bank + .pay-bank { margin-top: 18px; padding-top: 0; border-top: 0; }
+#student-view #panel-student-pay #pay-method-area .pay-bank-head { grid-area: head; margin: 0; font-size: 14px; font-weight: 600; color: var(--student-muted); }
+#student-view #panel-student-pay #pay-method-area .pay-bank-holder { grid-area: holder; margin: 0; font-size: 13px; color: var(--student-muted); }
+#student-view #panel-student-pay #pay-method-area .pay-bank-account { grid-area: acct; }
+#student-view #panel-student-pay #pay-method-area .pay-bank-number { font-size: 20px; font-weight: 700; letter-spacing: .02em; color: var(--student-ink); }
+
+#student-view #panel-student-pay #pay-method-area .pay-copy-btn {
+    min-height: 36px;
+    padding: 0 16px;
+    border: 0;
+    border-radius: 999px;
+    background: var(--student-green-soft);
+    color: var(--student-green);
+    font-size: 13px;
+    font-weight: 700;
+}
+
+/* 手機又特別矮：繳費頁再緊湊一點，讓整頁盡量不用捲動 */
+@media (max-width: 700px) and (max-height: 720px) {
+    #student-view #panel-student-pay .panel-inner { padding-top: 10px; }
+    #student-view #panel-student-pay .panel-inner > .pay-card { padding: 2px 16px 14px; }
+    #student-view #panel-student-pay .pay-amount { font-size: 32px; }
+    #student-view #panel-student-pay .pay-report-btn { min-height: 46px; margin-top: 12px; }
+    #student-view #panel-student-pay #pay-method-area .pay-card { margin-top: 16px; }
+    #student-view #panel-student-pay #pay-method-area .pay-method-row,
+    #student-view #panel-student-pay #pay-method-area .pay-method-row:first-of-type { padding: 10px 0; }
+}
 
