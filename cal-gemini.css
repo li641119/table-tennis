@@ -1497,11 +1497,6 @@ input[type="color"]::-moz-color-swatch {border: none;border-radius: 50%;}
 }
 
 
-.chart-year-total {
-    font-size: 13px;
-    color: #7f8c8d;
-}
-
 #progress-chart svg {
     display: block;
     width: 100%;
@@ -2263,7 +2258,6 @@ html {
 
     /* 上課紀錄、學習歷程 */
     .progress-chart-card { padding: 5px 12px; margin-bottom: 10px; }
-    .chart-year-total { flex: 1 1 100%; }
     .history-result-row { flex-wrap: wrap; }
 
     /* 前往繳費 */
@@ -3676,18 +3670,6 @@ html {
 }
 
 /* 「目前沒有公告時段」跟上面「停課公告」的內容用同一種字體（16px、半粗、深色） */
-/* 學習歷程：「今年已上完累計 N 小時」放在卡片的右下角 */
-.progress-chart-card .chart-year-total {
-    display: block;              /* 它是 <span>（行內元素），不設成區塊的話，width 和靠右都不會生效 */
-    flex: 0 0 auto;
-    align-self: flex-end;
-    width: 100%;
-    margin-top: 8px;
-    text-align: right;
-    font-size: 13px;
-    color: var(--student-muted, #7f8c8d);
-}
-
 /* 付款方式：標題拿掉之後，第一行（LINE Pay）上面不需要分隔線 */
 #student-view #panel-student-pay #pay-method-area .pay-method-row:first-of-type { padding-top: 4px; border-top: 0; }
 

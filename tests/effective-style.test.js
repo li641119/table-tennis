@@ -43,10 +43,11 @@ t('問候用特別字體（Playfair Display 斜體＋Noto Serif TC），統計�
 });
 
 console.log('\n【學習歷程】');
-t('「今年已上完累計 N 小時」在圖表下面、靠右（區塊元素、寬 100%、文字靠右）', () => {
-    const c = E.computed(home('chart-year-total'));
-    eq(c.display, 'block', 'display（行內元素的 width 與靠右不會生效）'); eq(c['text-align'], 'right', 'text-align'); eq(c.width, '100%', 'width');
-    ok(html.indexOf('id="chart-year-total"') > html.indexOf('id="progress-chart"'), '要在圖表之後');
+t('「今年已上完累計 N 小時」整個拿掉了（網頁、程式、樣式裡都沒有）', () => {
+    const calJs = fs.readFileSync(path.join(root, 'cal-gemini.js'), 'utf8');
+    ok(!/chart-year-total/.test(html + calJs + css), '還有殘留的 chart-year-total');
+    ok(!/今年已上完累計|全年已上完共/.test(html + calJs + css), '還有殘留的文字');
+    ok(!E.byId('chart-year-total'), '網頁裡還有這個元素');
 });
 
 console.log('\n【日曆頁】');

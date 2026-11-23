@@ -1496,16 +1496,7 @@ function renderProgressChart() {
     const lastIdx = chartYear === nowYear ? now.getMonth() : 11;
     const plotted = getMonthlyHoursForYear(name, chartYear).slice(0, lastIdx + 1);
     const visible = plotted.slice(firstIdx);
-    const total = visible.reduce((sum, h) => sum + h, 0);
     const hasData = visible.some(h => h > 0);
-
-    const totalEl = document.getElementById('chart-year-total');
-    if (totalEl) {
-        const totalText = Number(total.toFixed(1));
-        totalEl.innerText = chartYear === nowYear
-            ? `今年已上完累計 ${totalText} 小時`
-            : `全年已上完共 ${totalText} 小時`;
-    }
 
     const W = 480, H = 250, L = 38, R = 12, T = 28, B = 34, PAD = 14;
     const plotW = W - L - R;
