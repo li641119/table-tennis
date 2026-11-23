@@ -77,12 +77,15 @@ t('「付款方式」沒有白色框：透明底、沒有邊框、沒有陰影�
     const s = `${P} #pay-method-area .pay-card`;
     eq(decl(s, 'background'), 'transparent'); eq(decl(s, 'border'), '0'); eq(decl(s, 'box-shadow'), 'none'); eq(decl(s, 'padding'), '0');
 });
-t('整頁只有上方「應繳金額」有底色（淡綠），LINE Pay 與銀行區塊只有細線', () => {
-    eq(decl(`${P} .panel-inner > .pay-card`, 'background'), 'var(--student-green-soft)');
-    for (const s of [`${P} #pay-method-area .pay-bank`, `${P} #pay-method-area .pay-method-row`]) ok(!decl(s, 'background'), s + ' 不該有底色');
+t('上方「應繳金額」是白色卡片（跟學習歷程卡片同樣的白底、細邊框、圓角）；LINE Pay 與銀行區塊沒有框，只有細線', () => {
+    const top = `${P} .panel-inner > .pay-card`, chart = '.progress-chart-card';
+    eq(decl(top, 'background'), '#fff');
+    for (const prop of ['background', 'border', 'border-radius']) eq(decl(top, prop), decl(chart, prop), `和學習歷程卡片的 ${prop} 不一樣`);
+    for (const sel of [`${P} #pay-method-area .pay-card`, `${P} #pay-method-area .pay-bank`, `${P} #pay-method-area .pay-method-row`]) ok(/^(transparent)?$/.test(decl(sel, 'background')), sel + ' 不該有底色');
     ok(/1px solid/.test(decl(`${P} #pay-method-area .pay-method-row`, 'border-top')));
-    const block = nc.slice(nc.indexOf('.panel-inner > .pay-card'));
-    ok(!/background:\s*(#fff\b|#ffffff|white)/i.test(block), '繳費頁的新樣式裡不該再有白底');
+    // 付款方式區塊裡，只有「複製帳號」按鈕可以是白底
+    const whites = rules.filter((r) => r.sels.some((x) => x.includes('#pay-method-area')) && /background:\s*#fff\b/.test(r.body)).map((r) => r.sels.join());
+    eq(whites.length, 1); ok(whites[0].includes('.pay-copy-btn'), whites[0]);
 });
 t('繳費狀態不再是色塊：改成小圓點加文字', () => {
     for (const v of ['', '-unpaid', '-reported', '-paid', '-none']) eq(decl(`${P} .pay-banner${v}`, 'background'), 'none', v);
@@ -99,14 +102,40 @@ t('金額與明細不擠在一起：金額字級加大、明細每行獨立、�
     ok(/clamp\(32px, 10vw, 40px\)/.test(first), first);
     eq(decl(`${P} .pay-breakdown-line`, 'display'), 'block'); eq(decl(`${P} .pay-breakdown`, 'line-height'), '1.8');
 });
-t('銀行區塊：第一行「銀行（代碼）　戶名」、第二行「帳號　複製」；複製鈕是淡綠底、沒有邊框', () => {
+t('銀行區塊：第一行「銀行（代碼）　戶名」、第二行「帳號　複製」', () => {
     ok(/"head holder" "acct acct"/.test(decl(`${P} #pay-method-area .pay-bank`, 'grid-template-areas')));
-    const c = `${P} #pay-method-area .pay-copy-btn`; eq(decl(c, 'border'), '0'); eq(decl(c, 'background'), 'var(--student-green-soft)');
+});
+t('「複製帳號」按鈕是白色（白底、細邊框、深色字），不是淡綠色', () => {
+    const c = `${P} #pay-method-area .pay-copy-btn`;
+    eq(decl(c, 'background'), '#fff'); ok(/1px solid/.test(decl(c, 'border'))); eq(decl(c, 'color'), 'var(--student-ink)');
+});
+t('付款方式的字體比例：標題 14／項目 16／銀行說明 13／帳號 17（帳號不再比標題大一截）', () => {
+    const M = `${P} #pay-method-area`;
+    eq(decl(`${M} .pay-section-title`, 'font-size'), '14px'); eq(decl(`${M} .pay-method-name`, 'font-size'), '16px');
+    eq(decl(`${M} .pay-bank-head`, 'font-size'), '13px'); eq(decl(`${M} .pay-bank-number`, 'font-size'), '17px');
+    eq(decl(`${M} .pay-bank-number`, 'font-weight'), '600');
 });
 t('回報按鈕在上方卡片裡，滿版、深色、夠高', () => {
     const iR = html.indexOf('id="pay-report-area"'), iM = html.indexOf('id="pay-method-area"'), iB = html.indexOf('id="pay-breakdown"');
     ok(iB > 0 && iB < iR && iR < iM);
     eq(declBase(`${P} .pay-report-btn`, 'width'), '100%'); eq(declBase(`${P} .pay-report-btn`, 'min-height'), '50px');
+});
+
+console.log('\n【首頁、日曆、學習歷程的調整】');
+t('「目前沒有公告時段」跟「停課公告」的內容同一種字體（大小、粗細、行高、顏色）', () => {
+    const notice = '#student-view #panel-student-home #student-notice-content', hint = '#student-view #panel-student-home #student-slots-content .no-data-hint';
+    for (const prop of ['font-size', 'font-weight', 'line-height', 'color']) eq(decl(hint, prop), decl(notice, prop), prop);
+});
+t('日曆頁：說明文字距離月曆 20px，月曆與說明之間沒有被撐開的空白', () => {
+    const C = '#student-view #panel-student-calendar';
+    eq(decl(`${C} .month-day-detail`, 'margin-top'), '20px'); eq(decl(`${C} .month-day-detail`, 'height'), 'auto');
+    eq(decl(`${C} .month-calendar-grid`, 'margin-bottom'), '0'); eq(decl(`${C} .panel-inner`, 'gap'), '0');
+    eq(decl(`${C} .panel-inner`, 'align-content'), 'start');   // 沒有這行，多出來的畫面高度會被平均分給每一列
+});
+t('學習歷程：「今年已上完累計 N 小時」在圖表之後，靠右下角', () => {
+    ok(html.indexOf('id="chart-year-total"') > html.indexOf('id="progress-chart"'));
+    const T = '.progress-chart-card .chart-year-total';
+    eq(decl(T, 'text-align'), 'right'); eq(decl(T, 'align-self'), 'flex-end'); eq(decl(T, 'flex'), '0 0 auto');
 });
 
 console.log('\n【整體】');
