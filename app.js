@@ -2410,7 +2410,6 @@ function renderPayMethodHtml() {
     // LINE Pay 一定顯示一行；教練有補充說明就顯示在下面
     let html = `
         <div class="pay-card pay-methods">
-            <h3 class="pay-section-title">付款方式</h3>
             <div class="pay-method-row">
                 <div class="pay-method-name">📱 LINE Pay 好友轉帳</div>
                 ${linePayNote ? `<p class="pay-note">${payEscape(linePayNote)}</p>` : ''}

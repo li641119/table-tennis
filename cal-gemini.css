@@ -2677,11 +2677,6 @@ html {
     font-size: 13px;
 }
 
-#student-slots-content .no-data-hint {
-    margin: 0;
-    text-align: left;
-}
-
 #student-view,
 #coach-view {
     display: flex;
@@ -2909,12 +2904,6 @@ html {
     background: var(--student-green-soft);
 }
 
-#panel-student-home #student-slots-content .no-data-hint {
-    margin: 0;
-    color: var(--student-muted);
-    text-align: left;
-}
-
 /* 【修改 11｜手機版（700px 以下）】
    導覽列可橫向滑動；首頁改單欄，統計維持兩欄；調整各分頁的內距。 */
 @media (max-width: 700px) {
@@ -3133,7 +3122,6 @@ html {
 .coach-banner { margin: 10px 14px 0; padding: 10px 14px; border-radius: 10px; background: #ffebee; color: #c62828; font-size: 13.5px; font-weight: 600; line-height: 1.6; }
 
 /* 付款方式：LINE Pay 與銀行轉帳在同一張卡片裡 */
-.pay-methods .pay-section-title { margin-bottom: 2px; }
 .pay-method-row { padding: 12px 0; border-top: 1px solid #f0f2f5; }
 .pay-method-row:first-of-type { border-top: 0; }
 .pay-method-name { font-size: 15px; font-weight: 700; color: #2c3e50; }
@@ -3640,14 +3628,6 @@ html {
     box-shadow: none;
 }
 
-#student-view #panel-student-pay #pay-method-area .pay-section-title {
-    margin: 0 0 6px;
-    font-size: 14px;
-    font-weight: 600;
-    letter-spacing: .02em;
-    color: var(--student-ink);
-}
-
 #student-view #panel-student-pay #pay-method-area .pay-method-row,
 #student-view #panel-student-pay #pay-method-area .pay-method-row:first-of-type {
     padding: 14px 0;
@@ -3696,17 +3676,9 @@ html {
 }
 
 /* 「目前沒有公告時段」跟上面「停課公告」的內容用同一種字體（16px、半粗、深色） */
-#student-view #panel-student-home #student-slots-content .no-data-hint {
-    margin: 0;
-    text-align: left;
-    font-size: 16px;
-    font-weight: 600;
-    line-height: 1.5;
-    color: var(--student-ink);
-}
-
 /* 學習歷程：「今年已上完累計 N 小時」放在卡片的右下角 */
 .progress-chart-card .chart-year-total {
+    display: block;              /* 它是 <span>（行內元素），不設成區塊的話，width 和靠右都不會生效 */
     flex: 0 0 auto;
     align-self: flex-end;
     width: 100%;
@@ -3715,3 +3687,11 @@ html {
     font-size: 13px;
     color: var(--student-muted, #7f8c8d);
 }
+
+/* 付款方式：標題拿掉之後，第一行（LINE Pay）上面不需要分隔線 */
+#student-view #panel-student-pay #pay-method-area .pay-method-row:first-of-type { padding-top: 4px; border-top: 0; }
+
+/* 下週可預約時段的文字（沒有時段時的「目前沒有公告時段」也是）跟「停課公告」的內容同一種字體：16px、半粗、深色。
+   注意：沒有時段時，app.js 畫出來的是沒有 class 的 <p>，所以這裡用「> p」，而不是 .no-data-hint */
+#student-view #panel-student-home #student-slots-content { font-size: 16px; font-weight: 600; line-height: 1.5; color: var(--student-ink); }
+#student-view #panel-student-home #student-slots-content > p { margin: 0; font: inherit; color: inherit; text-align: left; }

@@ -1,6 +1,7 @@
 'use strict';
 // 執行方式：node tests/layout.test.js
 // 這是「樣式規則」的檢查：確認網頁、樣式、程式裡寫的內容符合設計。
+// 「元素最後實際套用到什麼樣子」（含權重、繼承、手機／電腦）由 tests/effective-style.test.js 負責。
 // 它不會真的把畫面畫出來，所以字距、實際高度要在手機上看；這裡負責防止規則被改壞或前後矛盾。
 const fs = require('fs');
 const path = require('path');
@@ -109,33 +110,10 @@ t('「複製帳號」按鈕是白色（白底、細邊框、深色字），不�
     const c = `${P} #pay-method-area .pay-copy-btn`;
     eq(decl(c, 'background'), '#fff'); ok(/1px solid/.test(decl(c, 'border'))); eq(decl(c, 'color'), 'var(--student-ink)');
 });
-t('付款方式的字體比例：標題 14／項目 16／銀行說明 13／帳號 17（帳號不再比標題大一截）', () => {
-    const M = `${P} #pay-method-area`;
-    eq(decl(`${M} .pay-section-title`, 'font-size'), '14px'); eq(decl(`${M} .pay-method-name`, 'font-size'), '16px');
-    eq(decl(`${M} .pay-bank-head`, 'font-size'), '13px'); eq(decl(`${M} .pay-bank-number`, 'font-size'), '17px');
-    eq(decl(`${M} .pay-bank-number`, 'font-weight'), '600');
-});
 t('回報按鈕在上方卡片裡，滿版、深色、夠高', () => {
     const iR = html.indexOf('id="pay-report-area"'), iM = html.indexOf('id="pay-method-area"'), iB = html.indexOf('id="pay-breakdown"');
     ok(iB > 0 && iB < iR && iR < iM);
     eq(declBase(`${P} .pay-report-btn`, 'width'), '100%'); eq(declBase(`${P} .pay-report-btn`, 'min-height'), '50px');
-});
-
-console.log('\n【首頁、日曆、學習歷程的調整】');
-t('「目前沒有公告時段」跟「停課公告」的內容同一種字體（大小、粗細、行高、顏色）', () => {
-    const notice = '#student-view #panel-student-home #student-notice-content', hint = '#student-view #panel-student-home #student-slots-content .no-data-hint';
-    for (const prop of ['font-size', 'font-weight', 'line-height', 'color']) eq(decl(hint, prop), decl(notice, prop), prop);
-});
-t('日曆頁：說明文字距離月曆 20px，月曆與說明之間沒有被撐開的空白', () => {
-    const C = '#student-view #panel-student-calendar';
-    eq(decl(`${C} .month-day-detail`, 'margin-top'), '20px'); eq(decl(`${C} .month-day-detail`, 'height'), 'auto');
-    eq(decl(`${C} .month-calendar-grid`, 'margin-bottom'), '0'); eq(decl(`${C} .panel-inner`, 'gap'), '0');
-    eq(decl(`${C} .panel-inner`, 'align-content'), 'start');   // 沒有這行，多出來的畫面高度會被平均分給每一列
-});
-t('學習歷程：「今年已上完累計 N 小時」在圖表之後，靠右下角', () => {
-    ok(html.indexOf('id="chart-year-total"') > html.indexOf('id="progress-chart"'));
-    const T = '.progress-chart-card .chart-year-total';
-    eq(decl(T, 'text-align'), 'right'); eq(decl(T, 'align-self'), 'flex-end'); eq(decl(T, 'flex'), '0 0 auto');
 });
 
 console.log('\n【整體】');
