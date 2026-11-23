@@ -487,6 +487,7 @@ window.closeStudentProfile = function () {
 // ------------------------------------------------------------
 let coachApprovals = {};        // 小寫 Email -> { name, approvedAt }
 let coachStudentsSnap = {};     // 學生姓名 -> 資料（用來算「待核准」的人數）
+let coachStudentsLoaded = false;   // 學生資料第一次讀回來了嗎
 let coachApprovalUnsubs = [];
 
 function isStudentApproved(name, email) {
@@ -517,6 +518,12 @@ function refreshProfileApproval() {
     if (!name || !statusEl || !btn) return;
     const emailEl = document.getElementById('profile-email');
     const email = ((emailEl && emailEl.dataset.email) || '').toLowerCase();
+    const reminderEl = document.getElementById('profile-reminder');
+    if (reminderEl) {
+        const r = reminderStatusText(name, email, !!email && isStudentApproved(name, email));
+        reminderEl.innerText = r.text;
+        reminderEl.classList.toggle('is-off', r.off);
+    }
     if (!email) {
         statusEl.innerText = '尚未綁定帳號';
         statusEl.classList.add('is-pending');
@@ -532,6 +539,7 @@ function refreshProfileApproval() {
 
 function afterApprovalDataChange() {
     updateStudentsNavBadge();
+    updateMaintenanceHint();
     refreshProfileApproval();
     const panel = document.getElementById('panel-students');
     if (panel && panel.classList.contains('active')) renderStudentDbPanel({ keepProfile: true });
@@ -549,6 +557,7 @@ function startCoachApprovalWatcher() {
         const m = {};
         snap.forEach((d) => { m[d.id] = d.data(); });
         coachStudentsSnap = m;
+        coachStudentsLoaded = true;
         afterApprovalDataChange();
     }, (err) => console.error('監聽學生資料失敗:', err)));
 }
@@ -558,6 +567,7 @@ function stopCoachApprovalWatcher() {
     coachApprovalUnsubs = [];
     coachApprovals = {};
     coachStudentsSnap = {};
+    coachStudentsLoaded = false;
     updateStudentsNavBadge();
 }
 
@@ -710,6 +720,32 @@ window.renderStudentProfileDetails = function () {
 };
 
 // 取得學生資料
+// 學生清單每一列的說明文字與樣式（獨立成函式，方便測試）
+function describeStudentRow(name, data, approved) {
+    const base = window.baseStudentName(name);
+    const priceText = data.defaultPrice !== undefined ? `$${data.defaultPrice}` : '—';
+    // 「Nancy(團體)」這類是系統為了記住各課別預設學費而自動建立的，帳號與提醒看基本名字那一筆
+    if (base !== name) {
+        return { text: `預設學費 ${priceText} · 帳號與提醒以「${base}」為準`, unbound: false, pending: false };
+    }
+    if (!data.email) {
+        return { text: `尚未綁定帳號 · 預設學費 ${priceText} · 🔕 收不到提醒`, unbound: true, pending: false };
+    }
+    if (!approved) {
+        return { text: `${data.email} · 預設學費 ${priceText} · ⏳ 待核准 · 🔕 收不到提醒`, unbound: false, pending: true };
+    }
+    return { text: `${data.email} · 預設學費 ${priceText} · ✅ 已核准 · 🔔 會收到提醒`, unbound: false, pending: false };
+}
+
+// 個人頁「上課提醒」那一行的文字
+function reminderStatusText(name, email, approved) {
+    const base = window.baseStudentName(name);
+    if (base !== name) return { text: `以「${base}」為準`, off: false };
+    if (!email) return { text: '🔕 收不到（還沒綁定 Email）', off: true };
+    if (!approved) return { text: '🔕 收不到（尚未核准）', off: true };
+    return { text: `🔔 會收到（上課前一天 21:00 寄到 ${email}）`, off: false };
+}
+
 async function renderStudentDbPanel(opts = {}) {
     const listEl = document.getElementById('student-db-list');
     const template = document.getElementById('student-row-template');
@@ -735,8 +771,6 @@ async function renderStudentDbPanel(opts = {}) {
 
             if (!data.email && !data.isStudent) return;
 
-            const emailText = data.email ? data.email : '尚未綁定帳號';
-            const priceText = data.defaultPrice !== undefined ? `$${data.defaultPrice}` : '—';
             const row = template.content.cloneNode(true);
 
             const rowWrap = row.querySelector('.db-row-wrap');
@@ -749,12 +783,10 @@ async function renderStudentDbPanel(opts = {}) {
             const deleteBtn = row.querySelector('.delete-student-btn');
             
             nameEl.textContent = `▸ ${name}`;
-            const approved = isStudentApproved(name, data.email);
-            const approvalText = data.email ? (approved ? ' · ✅ 已核准' : ' · ⏳ 待核准') : '';
-            metaEl.textContent =
-                `${emailText} · 預設學費 ${priceText}${approvalText}`;
-            metaEl.classList.toggle('is-unbound', !data.email);   // 沒綁定帳號的學生用橘色提醒
-            metaEl.classList.toggle('is-pending', !!data.email && !approved);   // 已綁定但還沒核准，也用橘色提醒
+            const meta = describeStudentRow(name, data, isStudentApproved(name, data.email));
+            metaEl.textContent = meta.text;
+            metaEl.classList.toggle('is-unbound', meta.unbound);   // 沒綁定帳號的學生用橘色提醒
+            metaEl.classList.toggle('is-pending', meta.pending);   // 已綁定但還沒核准，也用橘色提醒
 
             // 點擊學生列 → 展開 / 收合詳細資料
             rowClickable.addEventListener('click', () => {
@@ -921,13 +953,29 @@ window.renderOverviewPanel = function () {
 // 資料維護：補齊既有課程、收款紀錄的「學生基本姓名」欄位（studentBase）。
 // 學生端用這個欄位精確比對，Firestore 規則也靠它判斷「這筆是不是你的」。
 // ------------------------------------------------------------
+// 有課程、但學生清單裡沒有「基本名字」那一筆的學生人數（例如只有 Nancy(團體)、沒有 Nancy）
+function countMissingBaseStudents() {
+    if (!coachStudentsLoaded) return 0;
+    const existing = new Set(Object.keys(coachStudentsSnap));
+    const wanted = new Set();
+    existing.forEach((id) => wanted.add(window.baseStudentName(id)));
+    (window.courses || []).forEach((c) => {
+        if (c && c.type === 'work' && c.name) wanted.add(window.baseStudentName(c.name));
+    });
+    let missing = 0;
+    wanted.forEach((base) => { if (base && !existing.has(base)) missing++; });
+    return missing;
+}
+
 function updateMaintenanceHint() {
     const el = document.getElementById('maintenance-hint');
     if (!el) return;
     const missing = (window.courses || []).filter((c) => c && c.name && !c.studentBase).length;
-    el.innerText = missing > 0
-        ? `目前有 ${missing} 筆課程需要補齊（補齊前，學生端看不到這些課程）。`
-        : '課程資料都已補齊 ✅（收款紀錄請按下面的按鈕一起檢查）';
+    const missingBase = countMissingBaseStudents();
+    const notes = [];
+    if (missing > 0) notes.push(`目前有 ${missing} 筆課程需要補齊（補齊前，學生端看不到這些課程）。`);
+    if (missingBase > 0) notes.push(`有 ${missingBase} 位學生缺少「基本名字」那一筆（沒有它就不能設定 Email，也收不到提醒）。`);
+    el.innerText = notes.length ? notes.join('') : '課程資料都已補齊 ✅（收款紀錄請按下面的按鈕一起檢查）';
 }
 
 window.backfillStudentBase = async function () {
@@ -985,12 +1033,33 @@ window.backfillStudentBase = async function () {
         return { moved, conflicts };
     };
 
+    // 補上缺少的「基本名字」學生資料：例如只有「Nancy(團體)」、沒有「Nancy」，
+    // 教練就沒地方設定 Email，提醒信也找不到這位學生
+    const ensureBaseStudents = async () => {
+        const [stSnap, evSnap] = await Promise.all([getDocs(collection(db, 'students')), getDocs(collection(db, 'events'))]);
+        const existing = new Set();
+        const wanted = new Set();
+        stSnap.forEach((d) => { existing.add(d.id); wanted.add(window.baseStudentName(d.id)); });
+        evSnap.forEach((d) => {
+            const x = d.data();
+            if (x.type === 'work' && x.name) wanted.add(window.baseStudentName(x.name));
+        });
+        let created = 0, failed = 0;
+        for (const base of wanted) {
+            if (!base || existing.has(base)) continue;
+            try { await setDoc(doc(db, 'students', base), { isStudent: true }, { merge: true }); created++; existing.add(base); }
+            catch (err) { failed++; console.error(`建立學生 ${base} 失敗:`, err); }
+        }
+        return { created, failed };
+    };
+
     try {
         const st = await fixStudents();
+        const bs = await ensureBaseStudents();
         const ev = await fix('events', 'name');
         const inc = await fix('incomeRecords', 'studentName');
         const fmt = (label, r) => `${label} ${r.total} 筆：補齊 ${r.patched}、原本就有 ${r.alreadyOk}${r.noName ? `、缺姓名略過 ${r.noName}` : ''}${r.failed ? `、失敗 ${r.failed}` : ''}`;
-        setMsg(`完成。${fmt('課程', ev)}；${fmt('收款紀錄', inc)}；學生帳號 ${st.moved} 個已改綁到不含括號的姓名${st.conflicts.length ? `。需要你手動處理：${st.conflicts.join('、')}` : ''}`);
+        setMsg(`完成。${fmt('課程', ev)}；${fmt('收款紀錄', inc)}；學生帳號 ${st.moved} 個已改綁到不含括號的姓名；補上缺少的基本名字 ${bs.created} 個${bs.failed ? `（失敗 ${bs.failed}）` : ''}${st.conflicts.length ? `。需要你手動處理：${st.conflicts.join('、')}` : ''}`);
     } catch (err) {
         console.error('補齊失敗:', err);
         setMsg('補齊失敗：' + (err && err.message ? err.message : err));
@@ -1137,6 +1206,13 @@ window.uploadEvent = async (eventData) => {
             }
 
             await setDoc(studentRef, { defaultPrice: currentPrice, isStudent: true }, { merge: true });
+
+            // 基本名字（括號前面那段，例如「Nancy」）也要有一筆學生資料：
+            // Email 設在這一筆，學生用這個名字註冊或登入，提醒信也依它寄出。merge 不會動到已經設好的 Email。
+            const baseName = window.baseStudentName(eventData.name);
+            if (baseName && baseName !== eventData.name) {
+                await setDoc(doc(db, "students", baseName), { isStudent: true }, { merge: true });
+            }
 
             console.log(`🚀 雲端已記憶 ${eventData.name} 的預設學費為: ${currentPrice} 元`);
         }

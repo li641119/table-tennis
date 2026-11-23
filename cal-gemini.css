@@ -3566,3 +3566,6 @@ html {
     #student-view #panel-student-home .student-slots-card { grid-column: 1 / -1; }
 }
 
+/* 個人頁：收不到上課提醒時用橘色提醒 */
+#profile-reminder.is-off { color: #e65100; font-weight: 600; }
+
