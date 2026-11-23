@@ -14,7 +14,7 @@ on:
           - test      # 測試寄送：所有提醒信都寄給你自己
           - send      # 正式寄給學生
       date:
-        description: '要提醒哪一天的課（格式 2026-11-28；留空＝明天）'
+        description: '要提醒哪一天的課（例如 2026-11-23 或 11/23；留空＝明天）'
         required: false
 
 permissions:

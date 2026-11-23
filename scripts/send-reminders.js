@@ -38,6 +38,21 @@ function taipeiToday(now = new Date()) {
     return new Intl.DateTimeFormat('en-CA', { timeZone: TZ, year: 'numeric', month: '2-digit', day: '2-digit' }).format(now);
 }
 
+// 手動執行時，日期可以寫成 2026-11-23、2026/11/23、11/23、11-23（沒寫年份就用今年）。
+// 留空回傳空字串；看不懂或不是真的日期（例如 2/30）回傳 null。
+function normalizeDate(input, today) {
+    const s = String(input ?? '').trim();
+    if (!s) return '';
+    const m = s.match(/^(?:(\d{4})[-\/.])?(\d{1,2})[-\/.](\d{1,2})$/);
+    if (!m) return null;
+    const year = m[1] ? Number(m[1]) : Number(today.slice(0, 4));
+    const month = Number(m[2]);
+    const day = Number(m[3]);
+    const d = new Date(Date.UTC(year, month - 1, day));
+    if (d.getUTCFullYear() !== year || d.getUTCMonth() !== month - 1 || d.getUTCDate() !== day) return null;
+    return d.toISOString().slice(0, 10);
+}
+
 function addDays(dateStr, n) {
     const [y, m, d] = dateStr.split('-').map(Number);
     return new Date(Date.UTC(y, m - 1, d + n)).toISOString().slice(0, 10);
@@ -80,7 +95,23 @@ function formatDateLabel(dateStr) {
 
 // 把 Email 與其他可能洩漏個資的文字遮起來（紀錄是公開的）
 function scrub(text) {
-    return String(text ?? '').replace(/[\w.+-]+@[\w-]+(\.[\w-]+)+/g, '***@***');
+    return String(text ?? '').replace(/[\w.+-]+@[\w-]+(\.[\w-]+)+/g, (m) => (/\.gserviceaccount\.com$/i.test(m) ? m : '***@***'));
+}
+
+// 讀取 Firestore 失敗時，用白話說明可能的原因（並指出這把金鑰屬於哪個專案、哪個帳戶）
+function explainFirestoreError(err, serviceAccount) {
+    const code = err && err.code;
+    const msg = String((err && err.message) || err || '');
+    const project = (serviceAccount && serviceAccount.project_id) || '（金鑰裡沒有 project_id）';
+    const account = (serviceAccount && serviceAccount.client_email) || '（金鑰裡沒有 client_email）';
+    if (code === 7 || /PERMISSION_DENIED/.test(msg)) {
+        return `Firebase 拒絕讀取資料（PERMISSION_DENIED）。這把金鑰屬於專案「${project}」、帳戶「${account}」。` +
+            '請到 Google Cloud 的 IAM 頁面，確認這個帳戶有「Cloud Datastore 檢視者」角色，而且專案就是網站使用的 Firebase 專案；剛設定好的話，請等 2～5 分鐘再試。';
+    }
+    if (code === 5 || /NOT_FOUND/.test(msg)) {
+        return `找不到資料庫（NOT_FOUND）。這把金鑰屬於專案「${project}」，請確認它就是網站使用的 Firebase 專案。`;
+    }
+    return msg;
 }
 
 // 找出指定日期的教球課，並判斷每一堂該不該寄、寄給誰
@@ -182,9 +213,11 @@ async function main() {
     const missing = ['FIREBASE_SERVICE_ACCOUNT', 'GMAIL_USER', 'GMAIL_APP_PASSWORD'].filter((k) => !process.env[k]);
     if (missing.length) throw new Error(`缺少設定：${missing.join('、')}（請到 GitHub 的 Settings → Secrets and variables → Actions 新增）`);
 
-    const tomorrow = addDays(taipeiToday(), 1);
-    const target = (process.env.TARGET_DATE || '').trim() || tomorrow;
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(target)) throw new Error(`TARGET_DATE 要寫成 YYYY-MM-DD，收到：${target}`);
+    const today = taipeiToday();
+    const tomorrow = addDays(today, 1);
+    const rawDate = (process.env.TARGET_DATE || '').trim();
+    const target = rawDate ? normalizeDate(rawDate, today) : tomorrow;
+    if (!target) throw new Error(`看不懂日期「${rawDate}」。請寫成 2026-11-23 或 11/23；想提醒明天的課就留空。`);
     const isTomorrow = target === tomorrow;
 
     const [owner, repo] = String(process.env.GITHUB_REPOSITORY || '').split('/');
@@ -202,11 +235,16 @@ async function main() {
     admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
     const db = admin.firestore();
 
-    const [evSnap, stSnap, apSnap] = await Promise.all([
-        db.collection('events').where('type', '==', 'work').get(),
-        db.collection('students').get(),
-        db.collection('approvedEmails').get()
-    ]);
+    let evSnap, stSnap, apSnap;
+    try {
+        [evSnap, stSnap, apSnap] = await Promise.all([
+            db.collection('events').where('type', '==', 'work').get(),
+            db.collection('students').get(),
+            db.collection('approvedEmails').get()
+        ]);
+    } catch (err) {
+        throw new Error(explainFirestoreError(err, serviceAccount));
+    }
     const events = evSnap.docs.map((d) => d.data());
     const students = {};
     stSnap.forEach((d) => { students[d.id] = d.data(); });
@@ -267,6 +305,6 @@ if (require.main === module) {
 }
 
 module.exports = {
-    baseName, taipeiToday, addDays, weekdayOf, occursOn, lessonLabel,
-    formatDateLabel, scrub, planReminders, buildEmail, buildSummary
+    baseName, taipeiToday, normalizeDate, addDays, weekdayOf, occursOn, lessonLabel,
+    formatDateLabel, scrub, explainFirestoreError, planReminders, buildEmail, buildSummary
 };

@@ -29,6 +29,19 @@ t('星期：2026/11/28 是週六、11/29 是週日', () => {
     assert.strictEqual(r.formatDateLabel('2026-12-01'), '12/1（二）');
 });
 
+t('手動輸入日期：11/23、11-23、2026/11/3 都看得懂，沒寫年份就用今年', () => {
+    assert.strictEqual(r.normalizeDate('11/23', '2026-11-22'), '2026-11-23');
+    assert.strictEqual(r.normalizeDate(' 11-23 ', '2026-11-22'), '2026-11-23');
+    assert.strictEqual(r.normalizeDate('2026/11/3', '2026-11-22'), '2026-11-03');
+    assert.strictEqual(r.normalizeDate('2026-11-23', '2026-11-22'), '2026-11-23');
+    assert.strictEqual(r.normalizeDate('1/5', '2027-01-01'), '2027-01-05');
+});
+t('手動輸入日期：留空是空字串；亂寫或不存在的日期回傳 null', () => {
+    assert.strictEqual(r.normalizeDate('', '2026-11-22'), '');
+    assert.strictEqual(r.normalizeDate(undefined, '2026-11-22'), '');
+    ['abc', '13/40', '2/30', '11/', '2026-13-01', '11月23日'].forEach((x) => assert.strictEqual(r.normalizeDate(x, '2026-11-22'), null, x));
+});
+
 console.log('\n【這天有沒有課（規則與網站相同）】');
 const weekly = { isRepeating: true, day: '7', date: '2026-11-07', exceptions: ['2026-11-21'], repeatEndDate: '2026-12-12' };   // 每週六
 t('單次課只看日期', () => {
@@ -118,6 +131,21 @@ t('寄給教練的摘要：試跑與正式的標題不同，並列出略過原�
 console.log('\n【隱私】');
 t('錯誤訊息裡的 Email 會被遮起來（公開的執行紀錄不能出現學生 Email）', () => {
     assert.strictEqual(r.scrub('Invalid recipient marvin@gmail.com, hua@x.com.tw'), 'Invalid recipient ***@***, ***@***');
+});
+
+t('服務帳戶的 Email 會保留（看得出金鑰屬於哪個帳戶），學生的 Email 仍然遮起來', () => {
+    assert.strictEqual(r.scrub('a@b.com / lesson-reminder@calendar-2026-5ba8e.iam.gserviceaccount.com'), '***@*** / lesson-reminder@calendar-2026-5ba8e.iam.gserviceaccount.com');
+});
+
+console.log('\n【錯誤說明】');
+const sa = { project_id: 'calendar-2026-5ba8e', client_email: 'lesson-reminder@calendar-2026-5ba8e.iam.gserviceaccount.com' };
+t('沒有權限（PERMISSION_DENIED）：指出金鑰屬於哪個專案與帳戶，並說明要檢查什麼', () => {
+    const m = r.explainFirestoreError({ code: 7, message: '7 PERMISSION_DENIED: Missing or insufficient permissions.' }, sa);
+    assert.ok(m.includes('calendar-2026-5ba8e') && m.includes('lesson-reminder@') && m.includes('Cloud Datastore 檢視者') && m.includes('2～5 分鐘'));
+});
+t('找不到資料庫（NOT_FOUND）與其他錯誤', () => {
+    assert.ok(r.explainFirestoreError({ code: 5, message: '5 NOT_FOUND' }, sa).includes('找不到資料庫'));
+    assert.strictEqual(r.explainFirestoreError(new Error('網路中斷'), sa), '網路中斷');
 });
 
 console.log(`\n結果：${pass} 項通過、0 項失敗`);
