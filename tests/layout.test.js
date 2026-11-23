@@ -111,5 +111,10 @@ t('回報按鈕在上方卡片裡，滿版、深色、夠高', () => {
 
 console.log('\n【整體】');
 t('樣式檔大括號成對', () => eq((nc.match(/\{/g) || []).length, (nc.match(/\}/g) || []).length));
+t('網頁引用的版本號是最新的（不然使用者會繼續看到舊畫面）', () => {
+    const { computeVersion, FILES } = require('../scripts/bump-version.js');
+    const v = computeVersion();
+    for (const f of FILES) ok(html.includes(`${f}?v=${v}"`), `${f} 的版本號不是最新的，請執行：node scripts/bump-version.js`);
+});
 
 console.log(`\n結果：${pass} 項通過、0 項失敗`);
