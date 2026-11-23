@@ -98,7 +98,7 @@ if (registerForm) {
             await signOut(auth);
 
             registerForm.reset();
-            alert("✅ 註冊成功！請使用剛剛設定的帳號密碼重新登入。");
+            alert("✅ 註冊成功！請使用剛剛設定的帳號密碼登入。\n\n如果登入後看到「等待教練核准」，請等教練核准，核准後你的課表就會自動出現，不需要重新註冊。");
 
             const loginTabBtn = document.getElementById('tab-login');
             if (loginTabBtn) loginTabBtn.click();

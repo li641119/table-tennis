@@ -116,6 +116,16 @@ t('回報按鈕在上方卡片裡，滿版、深色、夠高', () => {
     eq(declBase(`${P} .pay-report-btn`, 'width'), '100%'); eq(declBase(`${P} .pay-report-btn`, 'min-height'), '50px');
 });
 
+console.log('\n【註冊頁】');
+t('姓名欄位的說明是「請使用本名」', () => {
+    ok(/<input[^>]*id="register-name"[^>]*placeholder="請使用本名"/.test(html));
+});
+t('註冊成功的提示說明「還要等教練核准、不需要重新註冊」', () => {
+    const m = app.match(/alert\("✅ 註冊成功[^;]*;/);
+    ok(m, '找不到註冊成功的提示');
+    ok(m[0].includes('等待教練核准') && m[0].includes('不需要重新註冊') && m[0].includes('課表就會自動出現'), m[0]);
+});
+
 console.log('\n【整體】');
 t('樣式檔大括號成對', () => eq((nc.match(/\{/g) || []).length, (nc.match(/\}/g) || []).length));
 t('網頁引用的版本號是最新的（不然使用者會繼續看到舊畫面）', () => {
